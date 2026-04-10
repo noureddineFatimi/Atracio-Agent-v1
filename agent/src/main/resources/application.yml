@@ -1,0 +1,8 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: env
+
+atracio:
+  base-url: ${ATRACIO_BASE_URL:https://demo.prod.atracio.com}
