@@ -6,7 +6,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: env
+        include: health, env
 
 atracio:
   base-url: ${ATRACIO_BASE_URL:https://demo.prod.atracio.com}
