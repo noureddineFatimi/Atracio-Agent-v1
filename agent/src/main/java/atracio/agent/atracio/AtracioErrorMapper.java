@@ -3,8 +3,10 @@ package atracio.agent.atracio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
- 
+
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
  
 /**
  * Translates raw Atracio backend responses and HTTP status codes into the
@@ -42,16 +44,15 @@ public class AtracioErrorMapper {
     /**
      * Maps an HTTP status code + raw Atracio response body to a NormalisedError.
      *
-     * Call this whenever the backend returns a non-2xx status, or when the
-     * response body carries { "status": "error", ... }.
+     * Call this whenever the backend returns a non-2xx status
      *
-     * @param httpStatus   the HTTP status code returned by Atracio (e.g. 401, 404, 500)
+     * @param httpStatus   the HTTP status code returned by Atracio (e.g. 401, 500)
      * @param responseBody the parsed JSON body from Atracio (may be null)
      * @return a NormalisedError ready to be placed in the tool response envelope
      */
     public NormalisedError map(int httpStatus, Map<String, Object> responseBody) {
         String backendCode    = extractBackendCode(responseBody);
-        String backendMessage = extractBackendMessage(responseBody);
+        String backendMessage = extractBackendMessagefromTechnicalError(responseBody);
  
         String normalisedCode = normalise(httpStatus, backendCode);
  
@@ -60,21 +61,21 @@ public class AtracioErrorMapper {
  
         return new NormalisedError(
                 normalisedCode,
-                buildUserMessage(normalisedCode, backendMessage),
+                buildMessage(normalisedCode, backendMessage),
                 httpStatus,
-                backendCode
+                backendCode != null ? backendCode : "backend_error"
         );
     }
  
     /**
-     * Maps a response body that carries { "status": "error", "response": "..." }
+     * Maps a response body that carries { "status": "error", "response": [{"...": "..."}] }
      * when the HTTP status was 2xx but the business operation failed.
      *
      * @param responseBody the parsed JSON body from Atracio
      * @return a NormalisedError, defaulting to validation_error for business failures
      */
     public NormalisedError mapBusinessError(Map<String, Object> responseBody) {
-        String backendMessage = extractBackendMessage(responseBody);
+        String backendMessage = extractBackendMessagefromLogicError(responseBody);
         log.debug("AtracioErrorMapper: business error — message={}", backendMessage);
  
         return new NormalisedError(
@@ -146,22 +147,22 @@ public class AtracioErrorMapper {
         };
     }
  
-    private String buildUserMessage(String normalisedCode, String backendMessage) {
+    private String buildMessage(String normalisedCode, String backendMessage) {
         return switch (normalisedCode) {
             case "unauthorized"     ->
-                    "Your session has expired or the access token is invalid. Please log in again.";
+                    "Session expired or the access token is invalid. User should log in again.";
             case "forbidden"        ->
-                    "You do not have permission to perform this action.";
+                    "Need permission to perform this action.";
             case "tenant_mismatch"  ->
-                    "The access token does not match the target tenant.";
+                    "Access token does not match the target tenant.";
             case "validation_error" ->
-                    backendMessage != null ? backendMessage : "The request was rejected by Atracio due to a validation error.";
+                    backendMessage != null ? backendMessage : "The request rejected by Atracio due to a validation error.";
             case "not_found"        ->
-                    backendMessage != null ? backendMessage : "The requested document or entity was not found.";
+                    backendMessage != null ? backendMessage : "The requested document or entity not found.";
             case "timeout"          ->
-                    "The Atracio backend did not respond in time. Please try again.";
+                    "The Atracio backend did not respond in time. User should try again.";
             case "backend_error"    ->
-                    "An unexpected error occurred on the Atracio backend. Please try again later.";
+                    "An unexpected error occurred on the Atracio backend. User should try again later.";
             default                 ->
                     backendMessage != null ? backendMessage : "An unknown error occurred.";
         };
@@ -174,9 +175,8 @@ public class AtracioErrorMapper {
     /**
      * Extracts the Atracio error code from the response body.
      *
-     * Handles two envelope shapes:
+     * Example:
      *   { "code": "access_token_expired", "message": "..." }   — auth errors
-     *   { "status": "error", "response": "Validation failed" } — business errors
      */
     private String extractBackendCode(Map<String, Object> body) {
         if (body == null) return null;
@@ -184,16 +184,34 @@ public class AtracioErrorMapper {
         return code instanceof String s ? s : null;
     }
  
-    private String extractBackendMessage(Map<String, Object> body) {
+    private String extractBackendMessagefromLogicError(Map<String, Object> body) {
+        if (body == null) return null;
+ 
+        // Business error shape: { "status": "error", "response": [{"...": "..."}] }
+        Object response = body.get("response");
+        if (response instanceof List<?>) {
+                List<?> list = (List<?>) response;
+
+                String message = list.stream()
+                        .filter(Map.class::isInstance)
+                        .map(Map.class::cast)
+                        .map(m -> m.get("completeErrorMessage"))
+                        .filter(val -> val instanceof String)    
+                        .map(String.class::cast)                
+                        .collect(Collectors.joining(", "));
+
+                return message.isEmpty() ? null : message;
+        }
+
+        return null;
+    }
+
+    private String extractBackendMessagefromTechnicalError(Map<String, Object> body) {
         if (body == null) return null;
  
         // Auth error shape: { "message": "..." }
         Object message = body.get("message");
         if (message instanceof String s && !s.isBlank()) return s;
- 
-        // Business error shape: { "status": "error", "response": "..." }
-        Object response = body.get("response");
-        if (response instanceof String s && !s.isBlank()) return s;
  
         return null;
     }
