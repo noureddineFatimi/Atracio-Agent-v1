@@ -72,7 +72,7 @@ public interface AtracioBackendClient {
      * @param bearerToken user access token
      * @return raw Atracio response body
      */
-    Object validateEntity(String entity,
+    List<Object> validateEntity(String entity,
                                    Map<String, Object> requestBody,
                                    String bearerToken);
 
@@ -84,21 +84,9 @@ public interface AtracioBackendClient {
      * @param bearerToken user access token
      * @return raw Atracio response body
      */
-    Map<String, Object> deleteEntity(String entity,
-                                   String bearerToken);
- 
-    
-    /**
-     * POST /api/entities/save/{entity}
-     *
-     * @param entity      Atracio entity key
-     * @param requestBody { "entity": {...}, "customFieldValues": [] }
-     * @param bearerToken user access token
-     * @return raw Atracio response body
-     */
-    Map<String, Object> updateEntity(String entity,
-                                   Map<String, Object> requestBody,
-                                   String bearerToken);
+    Map<String, Object> deleteEntity(String entity, 
+                                    String ids,
+                                    String bearerToken);
 
     // -------------------------------------------------------------------------
     // Generic process actions
@@ -119,6 +107,7 @@ public interface AtracioBackendClient {
     Map<String, Object> applyProcessAction(String entity,
                                            long id,
                                            String action,
+                                           Map<String, Object> payload,
                                            String bearerToken);
  
     // -------------------------------------------------------------------------

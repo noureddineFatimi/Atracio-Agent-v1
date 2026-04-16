@@ -111,7 +111,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     }
 
     @Override
-    public Object validateEntity(String entity,
+    public List<Object> validateEntity(String entity,
                                           Map<String, Object> requestBody,
                                           String bearerToken) {
         log.debug("[MOCK] saveEntity entity={}", entity);
@@ -122,30 +122,11 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     
     @Override
     public Map<String, Object> deleteEntity(String entity,
-                                          String bearerToken) {
+                                            String ids,
+                                            String bearerToken) {
         log.debug("[MOCK] saveEntity entity={}", entity);
 
         return success(null);
-    }
-
-    @Override
-    public Map<String, Object> updateEntity(String entity,
-                                          Map<String, Object> requestBody,
-                                          String bearerToken) {
-        log.debug("[MOCK] saveEntity entity={}", entity);
-                                            
-        @SuppressWarnings("unchecked")
-        Map<String, Object> doc = (Map<String, Object>) requestBody.getOrDefault("entity", Map.of());
-        int id = (int)doc.getOrDefault("id", 600000); 
-        String documentNumber = (String)doc.getOrDefault("documentNumber", "DRAFT-2600000");
-        int version = (int)doc.getOrDefault("version", 1);                                  
-        return success(Map.of(
-                "id", id,
-                "version", version + 1,
-                "documentNumber", documentNumber,
-                "subject", doc.getOrDefault("subject", "Saved document"),
-                "lifecycle", Map.of("lifecycleState", "DRAFT")
-        ));
     }
 
     // -------------------------------------------------------------------------
@@ -156,6 +137,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     public Map<String, Object> applyProcessAction(String entity,
                                                   long id,
                                                   String action,
+                                                  Map<String, Object> payload,
                                                   String bearerToken) {
         log.debug("[MOCK] applyProcessAction entity={} id={} action={}", entity, id, action);
  
