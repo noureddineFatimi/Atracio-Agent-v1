@@ -4,9 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
- 
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.lang.Math;
  
 /**
  * Mock implementation of AtracioBackendClient.
@@ -14,7 +16,7 @@ import java.util.Map;
  * Active when the Spring profile "mock" is set (default for local dev).
  * Returns realistic static responses that mirror the Atracio backend envelope:
  *
- *   { "status": "success", "response": { ... } }
+ *   (e.g.{ "status": "success", "response": { ... } })
  *
  * No HTTP calls are made. This lets every tool, orchestrator, and test run
  * without a live Atracio environment.
@@ -41,7 +43,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
         log.debug("[MOCK] listEntities entity={} filter={}", entity,
                 requestBody.getOrDefault("filter", ""));
  
-        return success(Map.of(
+        return Map.of(
                 "content", List.of(
                         Map.of(
                                 "id", 101,
@@ -66,7 +68,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                 ),
                 "totalElements", 2,
                 "totalPages", 1
-        ));
+        );
     }
  
     @Override
@@ -75,7 +77,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                                                 String bearerToken) {
         log.debug("[MOCK] getEntityDetails entity={} id={}", entity, id);
  
-        return success(Map.of(
+        return Map.of(
                 "id", id,
                 "documentNumber", entity.substring(0, 2).toUpperCase() + "-" + String.format("%06d", id),
                 "subject", "Mock document details — " + entity + " #" + id,
@@ -88,7 +90,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                                 "quantity", 10,
                                 "unitPrice", 25.0)
                 )
-        ));
+        );
     }
  
     @Override
@@ -99,8 +101,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
  
         @SuppressWarnings("unchecked")
         Map<String, Object> doc = (Map<String, Object>) requestBody.getOrDefault("entity", Map.of());
-        Object id = doc.getOrDefault("id", 999);
- 
+        int id = (int) ((Math.random() * (700000 - 600000)) + 600000);                                    
         return success(Map.of(
                 "id", id,
                 "documentNumber", entity.substring(0, 2).toUpperCase() + "-" + String.format("%06d", id),
@@ -108,7 +109,45 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                 "lifecycle", Map.of("lifecycleState", "DRAFT")
         ));
     }
- 
+
+    @Override
+    public Object validateEntity(String entity,
+                                          Map<String, Object> requestBody,
+                                          String bearerToken) {
+        log.debug("[MOCK] saveEntity entity={}", entity);
+
+        List<Object> success_empty_list = new ArrayList<>();
+        return success_empty_list;
+    }
+    
+    @Override
+    public Map<String, Object> deleteEntity(String entity,
+                                          String bearerToken) {
+        log.debug("[MOCK] saveEntity entity={}", entity);
+
+        return success(null);
+    }
+
+    @Override
+    public Map<String, Object> updateEntity(String entity,
+                                          Map<String, Object> requestBody,
+                                          String bearerToken) {
+        log.debug("[MOCK] saveEntity entity={}", entity);
+                                            
+        @SuppressWarnings("unchecked")
+        Map<String, Object> doc = (Map<String, Object>) requestBody.getOrDefault("entity", Map.of());
+        int id = (int)doc.getOrDefault("id", 600000); 
+        String documentNumber = (String)doc.getOrDefault("documentNumber", "DRAFT-2600000");
+        int version = (int)doc.getOrDefault("version", 1);                                  
+        return success(Map.of(
+                "id", id,
+                "version", version + 1,
+                "documentNumber", documentNumber,
+                "subject", doc.getOrDefault("subject", "Saved document"),
+                "lifecycle", Map.of("lifecycleState", "DRAFT")
+        ));
+    }
+
     // -------------------------------------------------------------------------
     // Process actions
     // -------------------------------------------------------------------------
@@ -117,7 +156,6 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     public Map<String, Object> applyProcessAction(String entity,
                                                   long id,
                                                   String action,
-                                                  Map<String, Object> payload,
                                                   String bearerToken) {
         log.debug("[MOCK] applyProcessAction entity={} id={} action={}", entity, id, action);
  
@@ -135,12 +173,11 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
             default                     -> "UNKNOWN";
         };
  
-        return success(Map.of(
-                "id", id,
+        return Map.of(
                 "entity", entity,
-                "action", action,
-                "lifecycle", Map.of("lifecycleState", newState)
-        ));
+                "id", id,
+                "state",newState
+        );
     }
  
     // -------------------------------------------------------------------------
@@ -148,45 +185,61 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public Map<String, Object> getArticleQuantity(long articleId,
+    public double getArticleQuantity(long articleId,
                                                   Long siteId,
                                                   String bearerToken) {
         log.debug("[MOCK] getArticleQuantity articleId={} siteId={}", articleId, siteId);
-        return success(Map.of("articleId", articleId, "siteId", siteId, "quantity", 120.0));
+        return (double)120.0;
     }
  
     @Override
-    public Map<String, Object> getArticleForecast(long articleId,
+    public double getArticleForecast(long articleId,
                                                    Long siteId,
                                                    String bearerToken) {
         log.debug("[MOCK] getArticleForecast articleId={} siteId={}", articleId, siteId);
-        return success(Map.of("articleId", articleId, "siteId", siteId, "forecastQuantity", 140.0));
+        return (double)140.0;
     }
  
     @Override
-    public Map<String, Object> getArticleValuation(long articleId, String bearerToken) {
+    public double getArticleValuation(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleValuation articleId={}", articleId);
-        return success(Map.of("articleId", articleId, "valuation", 2500.50));
+        return (double)2500.50;
     }
  
     @Override
-    public Map<String, Object> getArticleEntries(long articleId, String bearerToken) {
+    public double getArticleEntries(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleEntries articleId={}", articleId);
-        return success(Map.of("articleId", articleId, "entriesCurrentYear", 320));
+        return (double)320;
     }
  
     @Override
-    public Map<String, Object> getArticleIssues(long articleId, String bearerToken) {
+    public double getArticleIssues(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleIssues articleId={}", articleId);
-        return success(Map.of("articleId", articleId, "issuesCurrentYear", 200));
+        return (double)200;
     }
  
     @Override
-    public Map<String, Object> getArticleTurnover(long articleId, String bearerToken) {
+    public double getArticleTurnover(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleTurnover articleId={}", articleId);
-        return success(Map.of("articleId", articleId, "turnover", 18000.0, "ordersQuantity", 210));
+        return (double)210;
     }
- 
+    
+    @Override
+    public List<Object> getStockEvolution(long articleId, String bearerToken){
+        Map<String, Object> stock_evolution_dict_1 = Map.of( "date", 1775088000000L, "value", 13.000000);
+        Map<String, Object> stock_evolution_dict_2 = Map.of( "date", 1775520000000L, "value", 13.000000);
+        Map<String, Object> stock_evolution_dict_3 = Map.of( "date", 1775606400000L, "value", 13.000000);
+
+        List<Object> stock_evolution_list = new ArrayList<>();
+
+        stock_evolution_list.add(stock_evolution_dict_1);
+        stock_evolution_list.add(stock_evolution_dict_2);
+        stock_evolution_list.add(stock_evolution_dict_3);
+
+        return stock_evolution_list;                    
+
+    }
+
     // -------------------------------------------------------------------------
     // WMS — inventory unit lookup
     // -------------------------------------------------------------------------
@@ -196,7 +249,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                                                    String value,
                                                    String bearerToken) {
         log.debug("[MOCK] lookupInventoryUnit type={} value={}", lookupType, value);
-        return success(Map.of(
+        return Map.of(
                 "id", 7001,
                 "lookupType", lookupType,
                 "value", value,
@@ -204,7 +257,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                 "warehouse", Map.of("id", 2, "name", "Main Warehouse"),
                 "location", "A-01-03",
                 "quantity", 15.0
-        ));
+        );
     }
  
     // -------------------------------------------------------------------------
@@ -212,21 +265,22 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public Map<String, Object> getClientTurnover(long clientId, String bearerToken) {
+    public double getClientTurnover(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientTurnover clientId={}", clientId);
-        return success(Map.of("clientId", clientId, "turnover", 125000.0));
+        return (double)125000.0;
     }
  
     @Override
-    public Map<String, Object> getClientUnpaidAmount(long clientId, String bearerToken) {
+    public double getClientUnpaidAmount(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientUnpaidAmount clientId={}", clientId);
-        return success(Map.of("clientId", clientId, "unpaidAmount", 8500.0));
+        return (double)8500.0;
     }
  
     @Override
-    public Map<String, Object> getClientUnpaidInvoices(long clientId, String bearerToken) {
+    public List<Object> getClientUnpaidInvoices(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientUnpaidInvoices clientId={}", clientId);
-        return success(Map.of(
+        List<Object> unpaid_invoices_list = new ArrayList<>();
+        Map<String, Object> unpaid_invoice = Map.of(
                 "clientId", clientId,
                 "invoices", List.of(
                         Map.of("id", 201, "documentNumber", "INV-000201",
@@ -234,31 +288,33 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                         Map.of("id", 202, "documentNumber", "INV-000202",
                                 "amount", 3500.0, "dueDate", "2026-05-15")
                 )
-        ));
+        );
+        unpaid_invoices_list.add(unpaid_invoice);
+        return unpaid_invoices_list;
     }
  
     @Override
-    public Map<String, Object> getClientLastInvoiceDate(long clientId, String bearerToken) {
+    public Long getClientLastInvoiceDate(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientLastInvoiceDate clientId={}", clientId);
-        return success(Map.of("clientId", clientId, "lastInvoiceDate", "2026-03-15"));
+        return 1774828800000L;
     }
  
     @Override
-    public Map<String, Object> getClientSalesOrdersCount(long clientId, String bearerToken) {
+    public Integer getClientSalesOrdersCount(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientSalesOrdersCount clientId={}", clientId);
-        return success(Map.of("clientId", clientId, "count", 12));
+        return 12;
     }
  
     @Override
     public Map<String, Object> getClientLastSalesOrder(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientLastSalesOrder clientId={}", clientId);
-        return success(Map.of(
+        return Map.of(
                 "clientId", clientId,
                 "id", 101,
                 "documentNumber", "SO-000101",
                 "date", "2026-04-01",
                 "lifecycle", Map.of("lifecycleState", "RELEASED")
-        ));
+        );
     }
  
     // -------------------------------------------------------------------------
@@ -266,33 +322,36 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public Map<String, Object> getVendorTurnover(long vendorId, String bearerToken) {
+    public double getVendorTurnover(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorTurnover vendorId={}", vendorId);
-        return success(Map.of("vendorId", vendorId, "turnover", 87000.0));
+        return 87000.0;
     }
  
     @Override
-    public Map<String, Object> getVendorUnpaidAmount(long vendorId, String bearerToken) {
+    public double getVendorUnpaidAmount(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorUnpaidAmount vendorId={}", vendorId);
-        return success(Map.of("vendorId", vendorId, "unpaidAmount", 12000.0));
+        return 12000.0;
     }
  
     @Override
-    public Map<String, Object> getVendorUnpaidInvoices(long vendorId, String bearerToken) {
+    public List<Object> getVendorUnpaidInvoices(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorUnpaidInvoices vendorId={}", vendorId);
-        return success(Map.of(
+        List<Object> unpaid_invoices_list = new ArrayList<>();
+        Map<String, Object> unpaid_invoice = Map.of(
                 "vendorId", vendorId,
                 "invoices", List.of(
                         Map.of("id", 301, "documentNumber", "PINV-000301",
                                 "amount", 12000.0, "dueDate", "2026-05-01")
                 )
-        ));
+        );
+        unpaid_invoices_list.add(unpaid_invoice);
+        return unpaid_invoices_list;
     }
  
     @Override
-    public Map<String, Object> getVendorLastPurchaseOrderDate(long vendorId, String bearerToken) {
+    public Long getVendorLastPurchaseOrderDate(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorLastPurchaseOrderDate vendorId={}", vendorId);
-        return success(Map.of("vendorId", vendorId, "lastPurchaseOrderDate", "2026-03-28"));
+        return 1774828800000L;
     }
  
     // -------------------------------------------------------------------------

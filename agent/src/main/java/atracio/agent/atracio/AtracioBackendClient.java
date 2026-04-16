@@ -1,5 +1,6 @@
 package atracio.agent.atracio;
 
+import java.util.List;
 import java.util.Map;
  
 /**
@@ -62,7 +63,43 @@ public interface AtracioBackendClient {
     Map<String, Object> saveEntity(String entity,
                                    Map<String, Object> requestBody,
                                    String bearerToken);
+
+    /**
+     * POST /api/entities/validate/{entity}
+     *
+     * @param entity      Atracio entity key
+     * @param requestBody { "entity": {...}, "customFieldValues": [] }
+     * @param bearerToken user access token
+     * @return raw Atracio response body
+     */
+    Object validateEntity(String entity,
+                                   Map<String, Object> requestBody,
+                                   String bearerToken);
+
+    /**
+     * DELETE  /api/entities/delete/{entity}/{ids}
+     *
+     * @param entity      Atracio entity key
+     * @param requestBody { "entity": {...}, "customFieldValues": [] }
+     * @param bearerToken user access token
+     * @return raw Atracio response body
+     */
+    Map<String, Object> deleteEntity(String entity,
+                                   String bearerToken);
  
+    
+    /**
+     * POST /api/entities/save/{entity}
+     *
+     * @param entity      Atracio entity key
+     * @param requestBody { "entity": {...}, "customFieldValues": [] }
+     * @param bearerToken user access token
+     * @return raw Atracio response body
+     */
+    Map<String, Object> updateEntity(String entity,
+                                   Map<String, Object> requestBody,
+                                   String bearerToken);
+
     // -------------------------------------------------------------------------
     // Generic process actions
     // -------------------------------------------------------------------------
@@ -82,7 +119,6 @@ public interface AtracioBackendClient {
     Map<String, Object> applyProcessAction(String entity,
                                            long id,
                                            String action,
-                                           Map<String, Object> payload,
                                            String bearerToken);
  
     // -------------------------------------------------------------------------
@@ -92,39 +128,45 @@ public interface AtracioBackendClient {
     /**
      * GET /api/warehouse/article/quantity/{articleId}?siteId={siteId}
      */
-    Map<String, Object> getArticleQuantity(long articleId,
+    double getArticleQuantity(long articleId,
                                            Long siteId,
                                            String bearerToken);
  
     /**
      * GET /api/warehouse/article/quantity/{articleId}/forecast?siteId={siteId}
      */
-    Map<String, Object> getArticleForecast(long articleId,
+    double getArticleForecast(long articleId,
                                            Long siteId,
                                            String bearerToken);
  
     /**
      * GET /api/warehouse/article/valuation/{articleId}
      */
-    Map<String, Object> getArticleValuation(long articleId,
+    double getArticleValuation(long articleId,
                                             String bearerToken);
  
     /**
      * GET /api/warehouse/article/entries/{articleId}
      */
-    Map<String, Object> getArticleEntries(long articleId,
+    double getArticleEntries(long articleId,
                                           String bearerToken);
  
     /**
      * GET /api/warehouse/article/issues/{articleId}
      */
-    Map<String, Object> getArticleIssues(long articleId,
+    double getArticleIssues(long articleId,
                                          String bearerToken);
  
     /**
      * GET /api/warehouse/article/turnover/{articleId}
      */
-    Map<String, Object> getArticleTurnover(long articleId,
+    double getArticleTurnover(long articleId,
+                                           String bearerToken);
+
+    /**
+     * GET /api/warehouse/article/stock-evolution/{articleId}
+     */
+    List<Object> getStockEvolution(long articleId,
                                            String bearerToken);
  
     // -------------------------------------------------------------------------
@@ -148,15 +190,15 @@ public interface AtracioBackendClient {
     // Partner — client
     // -------------------------------------------------------------------------
  
-    Map<String, Object> getClientTurnover(long clientId, String bearerToken);
+    double getClientTurnover(long clientId, String bearerToken);
  
-    Map<String, Object> getClientUnpaidAmount(long clientId, String bearerToken);
+    double getClientUnpaidAmount(long clientId, String bearerToken);
  
-    Map<String, Object> getClientUnpaidInvoices(long clientId, String bearerToken);
+    List<Object> getClientUnpaidInvoices(long clientId, String bearerToken);
  
-    Map<String, Object> getClientLastInvoiceDate(long clientId, String bearerToken);
+    Long getClientLastInvoiceDate(long clientId, String bearerToken);
  
-    Map<String, Object> getClientSalesOrdersCount(long clientId, String bearerToken);
+    Integer getClientSalesOrdersCount(long clientId, String bearerToken);
  
     Map<String, Object> getClientLastSalesOrder(long clientId, String bearerToken);
  
@@ -164,11 +206,11 @@ public interface AtracioBackendClient {
     // Partner — vendor
     // -------------------------------------------------------------------------
  
-    Map<String, Object> getVendorTurnover(long vendorId, String bearerToken);
+    double getVendorTurnover(long vendorId, String bearerToken);
  
-    Map<String, Object> getVendorUnpaidAmount(long vendorId, String bearerToken);
+    double getVendorUnpaidAmount(long vendorId, String bearerToken);
  
-    Map<String, Object> getVendorUnpaidInvoices(long vendorId, String bearerToken);
+    List<Object> getVendorUnpaidInvoices(long vendorId, String bearerToken);
  
-    Map<String, Object> getVendorLastPurchaseOrderDate(long vendorId, String bearerToken);
+    Long getVendorLastPurchaseOrderDate(long vendorId, String bearerToken);
 }
