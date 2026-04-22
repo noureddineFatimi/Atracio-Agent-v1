@@ -111,12 +111,12 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     }
 
     @Override
-    public List<Object> validateEntity(String entity,
+    public List<Map<String, Object>> validateEntity(String entity,
                                           Map<String, Object> requestBody,
                                           String bearerToken) {
         log.debug("[MOCK] saveEntity entity={}", entity);
 
-        List<Object> success_empty_list = new ArrayList<>();
+        List<Map<String, Object>> success_empty_list = new ArrayList<>();
         return success_empty_list;
     }
     
@@ -167,7 +167,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public double getArticleQuantity(long articleId,
+    public Double getArticleQuantity(long articleId,
                                                   Long siteId,
                                                   String bearerToken) {
         log.debug("[MOCK] getArticleQuantity articleId={} siteId={}", articleId, siteId);
@@ -175,7 +175,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     }
  
     @Override
-    public double getArticleForecast(long articleId,
+    public Double getArticleForecast(long articleId,
                                                    Long siteId,
                                                    String bearerToken) {
         log.debug("[MOCK] getArticleForecast articleId={} siteId={}", articleId, siteId);
@@ -183,36 +183,36 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     }
  
     @Override
-    public double getArticleValuation(long articleId, String bearerToken) {
+    public Double getArticleValuation(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleValuation articleId={}", articleId);
         return (double)2500.50;
     }
  
     @Override
-    public double getArticleEntries(long articleId, String bearerToken) {
+    public Double getArticleEntries(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleEntries articleId={}", articleId);
         return (double)320;
     }
  
     @Override
-    public double getArticleIssues(long articleId, String bearerToken) {
+    public Double getArticleIssues(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleIssues articleId={}", articleId);
         return (double)200;
     }
  
     @Override
-    public double getArticleTurnover(long articleId, String bearerToken) {
+    public Double getArticleTurnover(long articleId, String bearerToken) {
         log.debug("[MOCK] getArticleTurnover articleId={}", articleId);
         return (double)210;
     }
     
     @Override
-    public List<Object> getStockEvolution(long articleId, String bearerToken){
+    public List<Map<String, Object>> getStockEvolution(long articleId, String bearerToken){
         Map<String, Object> stock_evolution_dict_1 = Map.of( "date", 1775088000000L, "value", 13.000000);
         Map<String, Object> stock_evolution_dict_2 = Map.of( "date", 1775520000000L, "value", 13.000000);
         Map<String, Object> stock_evolution_dict_3 = Map.of( "date", 1775606400000L, "value", 13.000000);
 
-        List<Object> stock_evolution_list = new ArrayList<>();
+        List<Map<String, Object>> stock_evolution_list = new ArrayList<>();
 
         stock_evolution_list.add(stock_evolution_dict_1);
         stock_evolution_list.add(stock_evolution_dict_2);
@@ -247,21 +247,21 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public double getClientTurnover(long clientId, String bearerToken) {
+    public Double getClientTurnover(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientTurnover clientId={}", clientId);
         return (double)125000.0;
     }
  
     @Override
-    public double getClientUnpaidAmount(long clientId, String bearerToken) {
+    public Double getClientUnpaidAmount(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientUnpaidAmount clientId={}", clientId);
         return (double)8500.0;
     }
  
     @Override
-    public List<Object> getClientUnpaidInvoices(long clientId, String bearerToken) {
+    public List<Map<String, Object>> getClientUnpaidInvoices(long clientId, String bearerToken) {
         log.debug("[MOCK] getClientUnpaidInvoices clientId={}", clientId);
-        List<Object> unpaid_invoices_list = new ArrayList<>();
+        List<Map<String, Object>> unpaid_invoices_list = new ArrayList<>();
         Map<String, Object> unpaid_invoice = Map.of(
                 "clientId", clientId,
                 "invoices", List.of(
@@ -304,21 +304,21 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
     // -------------------------------------------------------------------------
  
     @Override
-    public double getVendorTurnover(long vendorId, String bearerToken) {
+    public Double getVendorTurnover(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorTurnover vendorId={}", vendorId);
         return 87000.0;
     }
  
     @Override
-    public double getVendorUnpaidAmount(long vendorId, String bearerToken) {
+    public Double getVendorUnpaidAmount(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorUnpaidAmount vendorId={}", vendorId);
         return 12000.0;
     }
  
     @Override
-    public List<Object> getVendorUnpaidInvoices(long vendorId, String bearerToken) {
+    public List<Map<String, Object>> getVendorUnpaidInvoices(long vendorId, String bearerToken) {
         log.debug("[MOCK] getVendorUnpaidInvoices vendorId={}", vendorId);
-        List<Object> unpaid_invoices_list = new ArrayList<>();
+        List<Map<String, Object>> unpaid_invoices_list = new ArrayList<>();
         Map<String, Object> unpaid_invoice = Map.of(
                 "vendorId", vendorId,
                 "invoices", List.of(

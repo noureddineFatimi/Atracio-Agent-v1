@@ -72,7 +72,7 @@ public interface AtracioBackendClient {
      * @param bearerToken user access token
      * @return raw Atracio response body
      */
-    List<Object> validateEntity(String entity,
+    List<Map<String, Object>> validateEntity(String entity,
                                    Map<String, Object> requestBody,
                                    String bearerToken);
 
@@ -117,45 +117,45 @@ public interface AtracioBackendClient {
     /**
      * GET /api/warehouse/article/quantity/{articleId}?siteId={siteId}
      */
-    double getArticleQuantity(long articleId,
+    Double getArticleQuantity(long articleId,
                                            Long siteId,
                                            String bearerToken);
  
     /**
      * GET /api/warehouse/article/quantity/{articleId}/forecast?siteId={siteId}
      */
-    double getArticleForecast(long articleId,
+    Double getArticleForecast(long articleId,
                                            Long siteId,
                                            String bearerToken);
  
     /**
      * GET /api/warehouse/article/valuation/{articleId}
      */
-    double getArticleValuation(long articleId,
+    Double getArticleValuation(long articleId,
                                             String bearerToken);
  
     /**
      * GET /api/warehouse/article/entries/{articleId}
      */
-    double getArticleEntries(long articleId,
+    Double getArticleEntries(long articleId,
                                           String bearerToken);
  
     /**
      * GET /api/warehouse/article/issues/{articleId}
      */
-    double getArticleIssues(long articleId,
+    Double getArticleIssues(long articleId,
                                          String bearerToken);
  
     /**
      * GET /api/warehouse/article/turnover/{articleId}
      */
-    double getArticleTurnover(long articleId,
+    Double getArticleTurnover(long articleId,
                                            String bearerToken);
 
     /**
      * GET /api/warehouse/article/stock-evolution/{articleId}
      */
-    List<Object> getStockEvolution(long articleId,
+    List<Map<String, Object>> getStockEvolution(long articleId,
                                            String bearerToken);
  
     // -------------------------------------------------------------------------
@@ -179,11 +179,11 @@ public interface AtracioBackendClient {
     // Partner — client
     // -------------------------------------------------------------------------
  
-    double getClientTurnover(long clientId, String bearerToken);
+    Double getClientTurnover(long clientId, String bearerToken);
  
-    double getClientUnpaidAmount(long clientId, String bearerToken);
+    Double getClientUnpaidAmount(long clientId, String bearerToken);
  
-    List<Object> getClientUnpaidInvoices(long clientId, String bearerToken);
+    List<Map<String, Object>> getClientUnpaidInvoices(long clientId, String bearerToken);
  
     Long getClientLastInvoiceDate(long clientId, String bearerToken);
  
@@ -195,11 +195,11 @@ public interface AtracioBackendClient {
     // Partner — vendor
     // -------------------------------------------------------------------------
  
-    double getVendorTurnover(long vendorId, String bearerToken);
+    Double getVendorTurnover(long vendorId, String bearerToken);
  
-    double getVendorUnpaidAmount(long vendorId, String bearerToken);
+    Double getVendorUnpaidAmount(long vendorId, String bearerToken);
  
-    List<Object> getVendorUnpaidInvoices(long vendorId, String bearerToken);
+    List<Map<String, Object>> getVendorUnpaidInvoices(long vendorId, String bearerToken);
  
     Long getVendorLastPurchaseOrderDate(long vendorId, String bearerToken);
 }
