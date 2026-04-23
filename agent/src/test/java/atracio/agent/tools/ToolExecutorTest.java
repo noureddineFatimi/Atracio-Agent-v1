@@ -61,7 +61,7 @@ class ToolExecutorTest {
                     Map.of("id", 101, "documentNumber", "SO-000101")));
 
             when(client.listEntities(eq("SalesOrder"), any(), eq(TOKEN)))
-                    .thenReturn(successEnvelope(items));
+                    .thenReturn(items);
 
             ToolResponse result = executor.documentSearch(
                     "SalesOrder", "ACME", 0, 20, null, null, null, TENANT, TOKEN);
@@ -120,7 +120,7 @@ class ToolExecutorTest {
             Map<String, Object> doc = Map.of("id", 501, "documentNumber", "PO-000501");
 
             when(client.getEntityDetails("PurchaseOrder", 501, TOKEN))
-                    .thenReturn(successEnvelope(doc));
+                    .thenReturn(doc);
 
             ToolResponse result = executor.documentGetDetails(
                     "PurchaseOrder", 501, TENANT, TOKEN);
@@ -209,9 +209,9 @@ class ToolExecutorTest {
         void happyPath() {
             when(client.applyProcessAction(eq("SalesOrder"), eq(101L),
                     eq("lifecycle.release"), isNull(), eq(TOKEN)))
-                    .thenReturn(successEnvelope(
+                    .thenReturn(
                             Map.of("id", 101, "lifecycle",
-                                    Map.of("lifecycleState", "RELEASED"))));
+                                    Map.of("lifecycleState", "RELEASED")));
 
             ToolResponse result = executor.documentApplyProcessAction(
                     "SalesOrder", 101, "lifecycle.release", null, TENANT, TOKEN);
@@ -307,7 +307,7 @@ class ToolExecutorTest {
             Map<String, Object> unit = Map.of("id", 7001, "location", "A-01-03");
 
             when(client.lookupInventoryUnit("barcode", "ABC-123", TOKEN))
-                    .thenReturn(successEnvelope(unit));
+                    .thenReturn(unit);
 
             ToolResponse result = executor.wmsLookupInventoryUnit(
                     "barcode", "ABC-123", TENANT, TOKEN);

@@ -42,9 +42,7 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                                             String bearerToken) {
         log.debug("[MOCK] listEntities entity={} filter={}", entity,
                 requestBody.getOrDefault("filter", ""));
- 
-        return Map.of(
-                "content", List.of(
+        List<Map<String, Object>> items = List.of(
                         Map.of(
                                 "id", 101,
                                 "documentNumber", entity.substring(0, 2).toUpperCase() + "-000101",
@@ -61,14 +59,17 @@ public class AtracioBackendClientMock implements AtracioBackendClient {
                                 "client", Map.of("id", 44, "name", "ACME Corp"),
                                 "vendor", Map.of("id", 18, "name", "Global Vendor")
                         )
-                ),
+                );
+        Boolean asPage = requestBody.get("asPage") instanceof Boolean aP ? aP : true;
+        return asPage ? Map.of(
+                "content", items,
                 "pageable", Map.of(
                         "pageNumber", 0,
                         "pageSize", 20
                 ),
                 "totalElements", 2,
                 "totalPages", 1
-        );
+        ) : Map.of("response_from_backend", items); 
     }
  
     @Override
