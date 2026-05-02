@@ -43,7 +43,7 @@ public class AgentOrchestratorTest {
 
     private static final Logger log = LoggerFactory.getLogger(AgentOrchestratorTest.class);
     Client client = Client.builder()
-                    .apiKey("AIzaSyDCRskfGolPgmvEKFbAsA8-NSWhUhkW2oE")
+                    .apiKey(System.getenv("MODEL_API_KEY"))
                     .build();
      ChatModel GenAIChatModel = GoogleGenAiChatModel.builder()
                                  .genAiClient(client)

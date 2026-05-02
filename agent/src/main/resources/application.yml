@@ -1,6 +1,14 @@
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:mock}
+  ai:
+    google:
+      genai:
+        api-key: ${MODEL_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash
+            temperature: 0.2
 
 management:
   endpoints:
