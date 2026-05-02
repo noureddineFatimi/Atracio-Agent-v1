@@ -125,6 +125,10 @@ public class ToolResponse {
         return new ToolResponse(false, tool, null, payload, Map.of());
     }
 
+    public static ToolResponse agentError(String error) {
+        return new ToolResponse(false, "", null, new ErrorPayload("error", error, -1, null), Map.of());
+    }
+
     // -------------------------------------------------------------------------
     // Accessors — used by Jackson serialization and tests
     // -------------------------------------------------------------------------
