@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Executes all 7 tools defined in the guide (section 15).
@@ -35,6 +36,9 @@ public class ToolExecutor {
     private final AtracioBackendClient client;
     private final AtracioErrorMapper   errorMapper;
     private final AtracioUrlResolver   urlResolver;
+
+    private static final String TENANT = "demo";
+    private static final String TOKEN  = "eyJ.test.token";
 
     public ToolExecutor(AtracioBackendClient client,
                         AtracioErrorMapper errorMapper,
@@ -83,7 +87,7 @@ public class ToolExecutor {
         try {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("filter",        filter != null ? filter : "");
-            requestBody.put("page",          page);
+            requestBody.put("page",          page >= 0 ? page : 0);
             requestBody.put("size",          size > 0 ? size : 20);
             requestBody.put("sort",          sort != null ? sort : List.of("documentNumber,desc"));
             requestBody.put("asPage",        true);
@@ -146,7 +150,7 @@ public class ToolExecutor {
         }
         if (id <= 0) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'id' must be a positive number.");
+                    "Parameter 'id' not valid.");
         }
 
         try {
@@ -500,6 +504,105 @@ public class ToolExecutor {
             log.error("[{}] unexpected error", toolName, ex);
             return ToolResponse.error(toolName, err, tenant, backendPath);
         }
+    }
+
+    public ToolResponse dispatche(String toolName, Map<String, Object> arguments) {
+        if ("document.search".equals(toolName)) {
+            String entity = arguments.get("entity") instanceof String e ? e : "";
+            String filter = arguments.get("filter") instanceof String f ? f : "";
+            Integer page = arguments.get("page") instanceof Integer p ? p : 0 ;
+            Integer size = arguments.get("size") instanceof Integer s ? s : 20;
+            List<String> sort = arguments.get("sort") instanceof List<?> s ? s.stream().map(Object::toString).toList() : List.of();
+            Map<String, Object> entityFilters = arguments.get("entityFilters") instanceof Map<?, ?> eF ? eF.entrySet().stream()
+            .filter(e -> e.getKey() instanceof String)
+            .collect(Collectors.toMap(
+                e -> (String) e.getKey(),
+                Map.Entry::getValue
+            ))
+            : Map.of();
+            List<String> fieldsToFetch = arguments.get("fieldsToFetch") instanceof List<?> s ? s.stream().map(Object::toString).toList() : List.of();
+
+            return documentSearch(entity, filter, page, size, sort, entityFilters, fieldsToFetch, TENANT, TOKEN);
+        }
+
+        if ("document.save_draft".equals(toolName)) {
+            String entity = arguments.get("entity") instanceof String e ? e : "";
+            Map<String, Object> document = arguments.get("document") instanceof Map<?, ?> eF ? eF.entrySet().stream()
+            .filter(e -> e.getKey() instanceof String)
+            .collect(Collectors.toMap(
+                e -> (String) e.getKey(),
+                Map.Entry::getValue
+            ))
+            : Map.of();
+            List<Map<String, Object>> customFieldValues =
+            arguments.get("customFieldValues") instanceof List<?> list
+                ? list.stream()
+                    .filter(Map.class::isInstance)
+                    .map(m -> (Map<?, ?>) m)
+                    .map(m -> m.entrySet().stream()
+                        .collect(Collectors.toMap(
+                            e -> String.valueOf(e.getKey()),
+                            e -> (Object) e.getValue() // forcer Object ici
+                        ))
+                    )
+                    .toList()
+                : List.of();
+
+            return documentSaveDraft(entity, document, customFieldValues, TENANT, TOKEN);
+        }
+
+        if ("document.get_details".equals(toolName)) {
+            String entity = arguments.get("entity") instanceof String e ? e : "";
+            Object id = arguments.get("id");
+            if (id instanceof Long i) {
+                return documentGetDetails(entity, i, TENANT, TOKEN);
+            } else {
+                if (id instanceof Integer i) {
+                    id = (Integer) i;
+                    return documentGetDetails(entity, i, TENANT, TOKEN);
+                } else {
+                    return documentGetDetails(entity, 0, TENANT, TOKEN);
+                }
+            }
+        }
+
+        if ("wms.get_article_stock_summary".equals(toolName)) {
+            Long articleId = arguments.get("articleId") instanceof Long aI ? aI : 0 ;
+            Long siteId = arguments.get("siteId") instanceof Long sI ? sI : null ;
+
+            return wmsGetArticleStockSummary(articleId, siteId, TENANT, TOKEN);
+        }
+
+        if ("wms.lookup_inventory_unit".equals(toolName)) {
+            String lookupType = arguments.get("lookupType") instanceof String lT ? lT : "";
+            String value = arguments.get("value") instanceof String v ? v : "";
+
+            return wmsLookupInventoryUnit(lookupType, value, TENANT, TOKEN);
+        }
+
+        if ("document.apply_process_action".equals(toolName)) {
+            String entity = arguments.get("entity") instanceof String e ? e : "";
+            Long id = arguments.get("id") instanceof Long i ? i : 0;
+            String action = arguments.get("action") instanceof String a ? a : "";
+            Map<String, Object> payload = arguments.get("payload") instanceof Map<?, ?> eF ? eF.entrySet().stream()
+            .filter(e -> e.getKey() instanceof String)
+            .collect(Collectors.toMap(
+                e -> (String) e.getKey(),
+                Map.Entry::getValue
+            ))
+            : Map.of();
+
+            return documentApplyProcessAction(entity, id, action, payload, TENANT, TOKEN);
+        }
+
+        if ("partner.get_summary".equals(toolName)) {
+            Long partnerId = arguments.get("partnerId") instanceof Long pI ? pI : 0;
+            String partnerType = arguments.get("partnerType") instanceof String pT ? pT : "";
+
+            return partnerGetSummary(partnerType, partnerId, TENANT, TOKEN);
+        }
+
+        throw new IllegalArgumentException("Tool not found");
     }
 
     // =========================================================================
