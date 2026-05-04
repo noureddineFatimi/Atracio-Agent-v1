@@ -277,7 +277,7 @@ public class ToolExecutor {
         }
         if (id <= 0) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'id' must be a positive number.");
+                    "Parameter 'id' not valid.");
         }
         if (action == null || action.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
@@ -346,7 +346,7 @@ public class ToolExecutor {
 
         if (articleId <= 0) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'articleId' must be a positive number.");
+                    "Parameter 'articleId' not valid");
         }
 
         try {
@@ -470,7 +470,7 @@ public class ToolExecutor {
         }
         if (partnerId <= 0) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'partnerId' must be a positive number.");
+                    "Parameter 'partnerId' not valid.");
         }
 
         try {
@@ -558,19 +558,37 @@ public class ToolExecutor {
                 return documentGetDetails(entity, i, TENANT, TOKEN);
             } else {
                 if (id instanceof Integer i) {
-                    id = (Integer) i;
-                    return documentGetDetails(entity, i, TENANT, TOKEN);
+                    return documentGetDetails(entity, i.longValue(), TENANT, TOKEN);
                 } else {
-                    return documentGetDetails(entity, 0, TENANT, TOKEN);
+                    return documentGetDetails(entity, 0L, TENANT, TOKEN);
                 }
             }
         }
 
         if ("wms.get_article_stock_summary".equals(toolName)) {
-            Long articleId = arguments.get("articleId") instanceof Long aI ? aI : 0 ;
-            Long siteId = arguments.get("siteId") instanceof Long sI ? sI : null ;
-
-            return wmsGetArticleStockSummary(articleId, siteId, TENANT, TOKEN);
+            Object articleId = arguments.get("articleId");
+            Long aId = null;
+            if (articleId instanceof Long i) {
+                aId = i;
+            } else {
+                if (articleId instanceof Integer i) {
+                    aId = i.longValue();
+                } else {
+                    aId = 0L;
+                }
+            }
+            Object siteId = arguments.get("siteId");
+            Long sId = null;
+            if (siteId instanceof Long sI) {
+                sId = sI;
+            } else {
+                if (siteId instanceof Integer sI) {
+                    sId = sI.longValue();
+                } else {
+                    sId = 0L;
+                }
+            }
+            return wmsGetArticleStockSummary(aId, sId, TENANT, TOKEN);
         }
 
         if ("wms.lookup_inventory_unit".equals(toolName)) {
@@ -582,7 +600,17 @@ public class ToolExecutor {
 
         if ("document.apply_process_action".equals(toolName)) {
             String entity = arguments.get("entity") instanceof String e ? e : "";
-            Long id = arguments.get("id") instanceof Long i ? i : 0;
+            Object idObject = arguments.get("id");
+            Long id = null;
+            if (idObject instanceof Long i) {
+                id = i;
+            } else {
+                if (idObject instanceof Integer i) {
+                    id = i.longValue();
+                } else {
+                    id = 0L;
+                }
+            }
             String action = arguments.get("action") instanceof String a ? a : "";
             Map<String, Object> payload = arguments.get("payload") instanceof Map<?, ?> eF ? eF.entrySet().stream()
             .filter(e -> e.getKey() instanceof String)
@@ -596,7 +624,17 @@ public class ToolExecutor {
         }
 
         if ("partner.get_summary".equals(toolName)) {
-            Long partnerId = arguments.get("partnerId") instanceof Long pI ? pI : 0;
+            Object partnerIdObject = arguments.get("id");
+            Long partnerId = null;
+            if (partnerIdObject instanceof Long i) {
+                partnerId = i;
+            } else {
+                if (partnerIdObject instanceof Integer i) {
+                    partnerId = i.longValue();
+                } else {
+                    partnerId = 0L;
+                }
+            }
             String partnerType = arguments.get("partnerType") instanceof String pT ? pT : "";
 
             return partnerGetSummary(partnerType, partnerId, TENANT, TOKEN);
