@@ -63,7 +63,8 @@ public class AgentOrchestratorTest {
     private final AtracioUrlResolver atracioUrlResolver = new AtracioUrlResolver("https://demo.prod.atracio.com");
     private final AtracioErrorMapper atracioErrorMapper = new AtracioErrorMapper();
     private final ToolExecutor toolExecutor = new ToolExecutor(atracioBackendClientMock, atracioErrorMapper, atracioUrlResolver);
-    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, toolDefinitionRegistry, toolExecutor);
+    private final SystemPromptFactory systemPromptFactory = new SystemPromptFactory();
+    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, systemPromptFactory, toolDefinitionRegistry, toolExecutor);
 
     @Test 
     public void getToolCallArguments() throws JsonProcessingException {
