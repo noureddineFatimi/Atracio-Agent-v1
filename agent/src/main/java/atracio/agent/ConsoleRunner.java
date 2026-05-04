@@ -7,12 +7,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import atracio.agent.agent.AgentOrchestrator;
 import atracio.agent.tools.ToolDefinitionRegistry;
 
 import java.util.Scanner;
 
 @Component
 public class ConsoleRunner implements CommandLineRunner {
+
+    private final AgentOrchestrator agentOrchestrator;
+
+    public ConsoleRunner(AgentOrchestrator agentOrchestrator) {
+            this.agentOrchestrator = agentOrchestrator;
+        }
 
     @Override
     public void run(String... args) {
@@ -32,7 +39,7 @@ public class ConsoleRunner implements CommandLineRunner {
             }
 
             try {
-                String response = input;
+                String response = agentOrchestrator.chat(input);
                 System.out.println("Assistant: " + response);
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());

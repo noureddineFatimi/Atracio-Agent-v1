@@ -106,7 +106,7 @@ public class AgentOrchestrator {
             }
             return chatResponse.getResult().getOutput().getText();
         } catch (Exception e) {
-            return "A unknown error occured, please try again, some details of the error: " + e.getMessage();
+            return "A unknown error occured, please try again";
         }
     }
 }

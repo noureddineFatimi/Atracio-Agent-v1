@@ -78,6 +78,11 @@ public class AgentOrchestratorTest {
     }
 
     @Test
+    public void getApiKey() {
+        log.info("api key={}", System.getenv("MODEL_API_KEY"));
+    }
+
+    @Test
     public void chat() {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
