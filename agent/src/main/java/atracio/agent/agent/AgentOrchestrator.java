@@ -42,23 +42,20 @@ import atracio.agent.tools.ToolResponse;
 public class AgentOrchestrator {
 
     private final ChatClient chatClient;
-    private final List<ToolCallback> toolCallbacks;
     private final ToolExecutor toolExecutor;
 
     public AgentOrchestrator(ChatClient.Builder chatClientBuilder, ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor) {
-        this.chatClient = chatClientBuilder.build();
-        this.toolCallbacks = ToolDefinitionRegistry.getToolsCallBackList(toolDefinitionRegistry.getAll());
+        this.chatClient = chatClientBuilder
+                            .defaultToolCallbacks(ToolDefinitionRegistry.getToolsCallBackList(toolDefinitionRegistry.getAll()))
+                            .defaultOptions(GoogleGenAiChatOptions.builder()
+                                            .internalToolExecutionEnabled(false)
+                                            .build())
+                            .build();
         this.toolExecutor = toolExecutor;
     }
 
     public ChatResponse generate(String userInput) {
         return chatClient.prompt(userInput)
-            .toolCallbacks(toolCallbacks)
-            .options(
-                GoogleGenAiChatOptions.builder()
-                    .internalToolExecutionEnabled(false)
-                    .build()
-           )
             .call()
             .chatResponse();
     }
@@ -66,12 +63,6 @@ public class AgentOrchestrator {
     public ChatResponse generate(List<Message> messagesList) {
         Prompt prompt = new Prompt(messagesList);
         return chatClient.prompt(prompt)
-            .toolCallbacks(toolCallbacks)
-            .options(
-                GoogleGenAiChatOptions.builder()
-                    .internalToolExecutionEnabled(false)
-                    .build()
-           )
             .call()
             .chatResponse();
     }
