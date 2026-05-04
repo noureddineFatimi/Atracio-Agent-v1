@@ -42,6 +42,7 @@ import atracio.agent.tools.ToolShemas;
 public class AgentOrchestratorTest {
 
     private static final Logger log = LoggerFactory.getLogger(AgentOrchestratorTest.class);
+    
     private final Client client = Client.builder()
                     .apiKey(System.getenv("MODEL_API_KEY"))
                     .build();
