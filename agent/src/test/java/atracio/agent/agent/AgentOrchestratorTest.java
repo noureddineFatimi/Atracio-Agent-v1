@@ -42,10 +42,10 @@ import atracio.agent.tools.ToolShemas;
 public class AgentOrchestratorTest {
 
     private static final Logger log = LoggerFactory.getLogger(AgentOrchestratorTest.class);
-    Client client = Client.builder()
+    private final Client client = Client.builder()
                     .apiKey(System.getenv("MODEL_API_KEY"))
                     .build();
-     ChatModel GenAIChatModel = GoogleGenAiChatModel.builder()
+    private final ChatModel GenAIChatModel = GoogleGenAiChatModel.builder()
                                  .genAiClient(client)
                                  .defaultOptions(
                                      GoogleGenAiChatOptions.builder()
@@ -55,17 +55,17 @@ public class AgentOrchestratorTest {
                                  )
                                  .build();
     ObjectMapper objectMapper = new ObjectMapper();
-    private ChatClient.Builder builder = ChatClient.builder(GenAIChatModel);
-    private ToolShemas toolShemas = new ToolShemas();
-    private ToolDefinitionRegistry toolDefinitionRegistry = new ToolDefinitionRegistry(toolShemas);
-    private AtracioBackendClientMock atracioBackendClientMock = new AtracioBackendClientMock();
-    private AtracioUrlResolver atracioUrlResolver = new AtracioUrlResolver("https://demo.prod.atracio.com");
-    private AtracioErrorMapper atracioErrorMapper = new AtracioErrorMapper();
-    private ToolExecutor toolExecutor = new ToolExecutor(atracioBackendClientMock, atracioErrorMapper, atracioUrlResolver);
-    private AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, toolDefinitionRegistry, toolExecutor);
+    private final ChatClient.Builder builder = ChatClient.builder(GenAIChatModel);
+    private final ToolShemas toolShemas = new ToolShemas();
+    private final ToolDefinitionRegistry toolDefinitionRegistry = new ToolDefinitionRegistry(toolShemas);
+    private final AtracioBackendClientMock atracioBackendClientMock = new AtracioBackendClientMock();
+    private final AtracioUrlResolver atracioUrlResolver = new AtracioUrlResolver("https://demo.prod.atracio.com");
+    private final AtracioErrorMapper atracioErrorMapper = new AtracioErrorMapper();
+    private final ToolExecutor toolExecutor = new ToolExecutor(atracioBackendClientMock, atracioErrorMapper, atracioUrlResolver);
+    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, toolDefinitionRegistry, toolExecutor);
 
     @Test 
-    public void orchestrate() throws JsonProcessingException {
+    public void getToolCallArguments() throws JsonProcessingException {
         ChatResponse chatResponse = agentOrchestrator.generate("What is the details of Sale Order document with id 334");
         assertThat(chatResponse).isNotNull();
         log.info("chatResponse={}", chatResponse);
