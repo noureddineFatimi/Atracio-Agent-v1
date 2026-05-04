@@ -44,8 +44,9 @@ public class AgentOrchestrator {
     private final ChatClient chatClient;
     private final ToolExecutor toolExecutor;
 
-    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor) {
+    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor) {
         this.chatClient = chatClientBuilder
+                            .defaultSystem(systemPromptFactory.build())
                             .defaultToolCallbacks(ToolDefinitionRegistry.getToolsCallBackList(toolDefinitionRegistry.getAll()))
                             .defaultOptions(GoogleGenAiChatOptions.builder()
                                             .internalToolExecutionEnabled(false)
