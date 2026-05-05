@@ -57,8 +57,9 @@ class ToolResponseTest {
 
     @Test
     void toolErrorResponse() {
+        String entity = "ShippingOrder";
         ToolResponse response = ToolResponse.toolError(
-                "document.search", "tool_mapping_error", "Unknown entity: FooBar");
+                "document.search", "tool_mapping_error", "Unknown entity: FooBar", "demo", "/entities/list/" + entity);
 
         assertThat(response.isOk()).isFalse();
         assertThat(response.getData()).isNull();
