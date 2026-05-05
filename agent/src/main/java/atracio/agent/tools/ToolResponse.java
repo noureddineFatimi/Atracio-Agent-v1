@@ -102,6 +102,26 @@ public class ToolResponse {
     }
 
      /**
+     * Builds an error response from a NormalisedError.
+     *
+     * @param tool           tool name
+     * @param normalisedError the error produced by AtracioErrorMapper
+     * @param tenant         tenant identifier
+     */
+    public static ToolResponse errorWithMeta(String tool,
+                                     NormalisedError normalisedError,
+                                     Map<String, Object> customMeta
+                                     ) {
+        ErrorPayload payload = new ErrorPayload(
+                normalisedError.code(),
+                normalisedError.message(),
+                normalisedError.backendStatus(),
+                normalisedError.backendCode()
+        );
+        return new ToolResponse(false, tool, null, payload, customMeta);
+    }
+
+     /**
      * Builds a success response with a custom meta map.
      * Use this for aggregated tools (e.g. wms.get_article_stock_summary) that
      * need extra meta fields like "aggregated: true".
@@ -120,9 +140,14 @@ public class ToolResponse {
      * @param code    normalised error code (e.g. "tool_mapping_error")
      * @param message human-readable explanation
      */
-    public static ToolResponse toolError(String tool, String code, String message) {
+    public static ToolResponse toolError(String tool, String code, String message, String tenant, String backendPath) {
         ErrorPayload payload = new ErrorPayload(code, message, -1, null);
-        return new ToolResponse(false, tool, null, payload, Map.of());
+        return new ToolResponse(false, tool, null, payload, meta(tenant, backendPath));
+    }
+
+    public static ToolResponse toolErrorWithMeta(String tool, String code, String message, Map<String, Object> customMeta) {
+        ErrorPayload payload = new ErrorPayload(code, message, -1, null);
+        return new ToolResponse(false, tool, null, payload, customMeta);
     }
 
     public static ToolResponse agentError(String error) {

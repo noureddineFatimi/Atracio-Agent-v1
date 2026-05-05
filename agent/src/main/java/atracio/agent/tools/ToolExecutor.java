@@ -81,7 +81,7 @@ public class ToolExecutor {
 
         if (entity == null || entity.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'entity' is required.");
+                    "Parameter 'entity' is required.", tenant, backendPath);
         }
 
         try {
@@ -146,11 +146,11 @@ public class ToolExecutor {
 
         if (entity == null || entity.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'entity' is required.");
+                    "Parameter 'entity' is required.", tenant, backendPath);
         }
         if (id <= 0) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'id' not valid.");
+                    "Parameter 'id' not valid.", tenant, backendPath);
         }
 
         try {
@@ -207,11 +207,11 @@ public class ToolExecutor {
 
         if (entity == null || entity.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'entity' is required.");
+                    "Parameter 'entity' is required.", tenant, backendPath);
         }
         if (document == null || document.isEmpty()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'document' is required and cannot be empty.");
+                    "Parameter 'document' is required and cannot be empty.", tenant, backendPath);
         }
 
         try {
@@ -271,26 +271,26 @@ public class ToolExecutor {
 
         final String toolName = "document.apply_process_action";
 
-        if (entity == null || entity.isBlank()) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'entity' is required.");
-        }
-        if (id <= 0) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'id' not valid.");
-        }
-        if (action == null || action.isBlank()) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'action' is required (e.g. 'lifecycle.release').");
-        }
-
         // Resolve URL early — catches unknown action families before hitting backend
         final String backendPath;
         try {
             backendPath = urlResolver.resolveProcessAction(entity, id, action)
                     .replace(urlResolver.getApiBase(), "");
         } catch (IllegalArgumentException ex) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error", ex.getMessage());
+            return ToolResponse.toolError(toolName, "tool_mapping_error", ex.getMessage(), tenant, "unknown");
+        }
+
+        if (entity == null || entity.isBlank()) {
+            return ToolResponse.toolError(toolName, "tool_mapping_error",
+                    "Parameter 'entity' is required.", tenant, backendPath);
+        }
+        if (id <= 0) {
+            return ToolResponse.toolError(toolName, "tool_mapping_error",
+                    "Parameter 'id' not valid.", tenant, backendPath);
+        }
+        if (action == null || action.isBlank()) {
+            return ToolResponse.toolError(toolName, "tool_mapping_error",
+                    "Parameter 'action' is required (e.g. 'lifecycle.release').", tenant, backendPath);
         }
 
         try {
@@ -342,11 +342,15 @@ public class ToolExecutor {
                                                   String bearerToken) {
 
         final String toolName    = "wms.get_article_stock_summary";
-        final String backendPath = "/warehouse/article/**/" + articleId;
+
+        Map<String, Object> meta = Map.of(
+                    "tenant",      tenant != null ? tenant : "",
+                    "aggregated",  true
+        );
 
         if (articleId <= 0) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'articleId' not valid");
+            return ToolResponse.toolErrorWithMeta(toolName, "tool_mapping_error",
+                    "Parameter 'articleId' not valid", meta);
         }
 
         try {
@@ -368,16 +372,13 @@ public class ToolExecutor {
             data.put("turnover",           turnover);
 
             log.debug("[{}] articleId={} siteId={} ok", toolName, articleId, siteId);
-            Map<String, Object> meta = Map.of(
-                    "tenant",      tenant != null ? tenant : "",
-                    "aggregated",  true
-            );
+           
             return ToolResponse.successWithMeta(toolName, data, meta);
 
         } catch (Exception ex) {
             NormalisedError err = errorMapper.mapException(ex);
             log.error("[{}] unexpected error", toolName, ex);
-            return ToolResponse.error(toolName, err, tenant, backendPath);
+            return ToolResponse.errorWithMeta(toolName, err, meta);
         }
     }
 
@@ -402,15 +403,15 @@ public class ToolExecutor {
 
         if (lookupType == null || lookupType.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'lookupType' is required: 'barcode', 'rfidTag', or 'serialNumber'.");
+                    "Parameter 'lookupType' is required: 'barcode', 'rfidTag', or 'serialNumber'.", tenant, backendPath);
         }
         if (!List.of("barcode", "rfidTag", "serialNumber").contains(lookupType)) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Unknown lookupType '" + lookupType + "'. Must be 'barcode', 'rfidTag', or 'serialNumber'.");
+                    "Unknown lookupType '" + lookupType + "'. Must be 'barcode', 'rfidTag', or 'serialNumber'.", tenant, backendPath);
         }
         if (value == null || value.isBlank()) {
             return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'value' is required.");
+                    "Parameter 'value' is required.", tenant, backendPath);
         }
 
         try {
@@ -458,19 +459,23 @@ public class ToolExecutor {
                                           String bearerToken) {
 
         final String toolName    = "partner.get_summary";
-        final String backendPath = "/" + partnerType + "/" + "**" + "/" + partnerId + "/" + "**";
+
+        Map<String, Object> meta = Map.of(
+                    "tenant",      tenant != null ? tenant : "",
+                    "aggregated",  true
+        );
 
         if (partnerType == null || partnerType.isBlank()) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'partnerType' is required: 'client' or 'vendor'.");
+            return ToolResponse.toolErrorWithMeta(toolName, "tool_mapping_error",
+                    "Parameter 'partnerType' is required: 'client' or 'vendor'.", meta);
         }
         if (!List.of("client", "vendor").contains(partnerType)) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Unknown partnerType '" + partnerType + "'. Must be 'client' or 'vendor'.");
+            return ToolResponse.toolErrorWithMeta(toolName, "tool_mapping_error",
+                    "Unknown partnerType '" + partnerType + "'. Must be 'client' or 'vendor'.", meta);
         }
         if (partnerId <= 0) {
-            return ToolResponse.toolError(toolName, "tool_mapping_error",
-                    "Parameter 'partnerId' not valid.");
+            return ToolResponse.toolErrorWithMeta(toolName, "tool_mapping_error",
+                    "Parameter 'partnerId' not valid.", meta);
         }
 
         try {
@@ -493,16 +498,13 @@ public class ToolExecutor {
             }
 
             log.debug("[{}] partnerType={} partnerId={} ok", toolName, partnerType, partnerId);
-            Map<String, Object> meta = Map.of(
-                    "tenant",      tenant != null ? tenant : "",
-                    "aggregated",  true
-            );
+            
             return ToolResponse.successWithMeta(toolName, data, meta);
 
         } catch (Exception ex) {
             NormalisedError err = errorMapper.mapException(ex);
             log.error("[{}] unexpected error", toolName, ex);
-            return ToolResponse.error(toolName, err, tenant, backendPath);
+            return ToolResponse.errorWithMeta(toolName, err,meta);
         }
     }
 
