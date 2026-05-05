@@ -46,6 +46,7 @@ public class AgentOrchestrator {
 
     public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor) {
         this.chatClient = chatClientBuilder
+                            .defaultAdvisors(new SimpleLoggerAdvisor())
                             .defaultSystem(systemPromptFactory.build())
                             .defaultToolCallbacks(ToolDefinitionRegistry.getToolsCallBackList(toolDefinitionRegistry.getAll()))
                             .defaultOptions(GoogleGenAiChatOptions.builder()

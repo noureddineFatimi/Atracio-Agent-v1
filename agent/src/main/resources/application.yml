@@ -10,6 +10,10 @@ spring:
             model: gemini-2.5-flash
             temperature: 0.2
 
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: DEBUG
+
 management:
   endpoints:
     web:

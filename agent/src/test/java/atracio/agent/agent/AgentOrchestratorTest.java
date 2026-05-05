@@ -125,6 +125,39 @@ public class AgentOrchestratorTest {
     }
 
     @Test
+    public void seeOnlyAdvisorLogging() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            UserMessage userMessage = UserMessage.builder().text("What is the details of Sale Order document with id 30").build();
+            List<Message> history = new ArrayList<>();
+            history.add(userMessage);
+            ChatResponse chatResponse = agentOrchestrator.generate(history);
+            AssistantMessage assistantMessage = (AssistantMessage) chatResponse.getResult().getOutput();
+            history.add(assistantMessage);
+            while (chatResponse.hasToolCalls()) {
+                List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+                for (ToolCall toolCall : assistantMessage.getToolCalls()) {
+                    try {
+                        Map<String, Object> arguments = objectMapper.readValue(toolCall.arguments(), new TypeReference<Map<String, Object>>() {});
+                        ToolResponse toolResponse = toolExecutor.dispatche(toolCall.name(), arguments);
+                        String toolResponseJson = objectMapper.writeValueAsString(toolResponse);
+                        ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), toolResponseJson);
+                        responses.add(response);
+                    } catch (Exception e) {
+                        ToolResponse toolResponse = ToolResponse.agentError(e.getMessage());
+                        String toolResponseJson = objectMapper.writeValueAsString(toolResponse);
+                        ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), toolResponseJson);
+                        responses.add(response);
+                    }
+                }
+                history.add(ToolResponseMessage.builder().responses(responses).build());
+                chatResponse = agentOrchestrator.generate(history);
+            }
+        } catch (Exception e) { 
+        }
+    }
+
+    @Test
     public void testLogging() {
         log.info("logs here");
     }
