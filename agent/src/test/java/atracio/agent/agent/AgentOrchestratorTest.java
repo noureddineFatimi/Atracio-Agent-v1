@@ -50,7 +50,7 @@ public class AgentOrchestratorTest {
                                  .genAiClient(client)
                                  .defaultOptions(
                                      GoogleGenAiChatOptions.builder()
-                                         .model("gemini-2.5-flash")
+                                         .model("gemini-3.1-flash-lite-preview")
                                          .temperature(2.0) // ton modèle NVIDIA
                                          .build()
                                  )
