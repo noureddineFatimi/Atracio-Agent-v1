@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -64,7 +67,15 @@ public class AgentOrchestratorTest {
     private final AtracioErrorMapper atracioErrorMapper = new AtracioErrorMapper();
     private final ToolExecutor toolExecutor = new ToolExecutor(atracioBackendClientMock, atracioErrorMapper, atracioUrlResolver);
     private final SystemPromptFactory systemPromptFactory = new SystemPromptFactory();
-    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, systemPromptFactory, toolDefinitionRegistry, toolExecutor);
+    
+    private final ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
+    private final MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+                                                    .chatMemoryRepository(repository)
+                                                    .maxMessages(10)
+                                                    .build();
+    private final ConversationService conversationService = new ConversationService(memory, builder);
+
+    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, systemPromptFactory, toolDefinitionRegistry, toolExecutor, conversationService);
 
     @Test 
     public void getToolCallArguments() throws JsonProcessingException {
