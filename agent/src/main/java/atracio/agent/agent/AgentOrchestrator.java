@@ -47,8 +47,9 @@ public class AgentOrchestrator {
     private final ChatClient chatClient;
     private final ToolExecutor toolExecutor;
     private final ConversationService conversationService;
+    private final ObjectMapper objectMapper;
 
-    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor, ConversationService conversationService) {
+    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor, ConversationService conversationService, ObjectMapper objectMapper) {
         this.chatClient = chatClientBuilder
                             .defaultAdvisors(new SimpleLoggerAdvisor())
                             .defaultSystem(systemPromptFactory.build())
@@ -59,6 +60,7 @@ public class AgentOrchestrator {
                             .build();
         this.toolExecutor = toolExecutor;
         this.conversationService = conversationService;
+        this.objectMapper = objectMapper;
     }
 
     public ChatResponse generate(String userInput) {
@@ -99,15 +101,19 @@ public class AgentOrchestrator {
         conversationService.addToolResultToConversation(conversationId, response);
     }
 
+    public AssistantMessage addAssistantMessage(ChatResponse chatResponse, String conversationId) {
+        AssistantMessage assistantMessage = (AssistantMessage) chatResponse.getResult().getOutput();
+        conversationService.addAssistantMessageToConversation(conversationId, assistantMessage);
+        return assistantMessage;
+    }
+
     public String chat(String userInput) {
         String conversationId = "conv-001";
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             addUserMessage(conversationId, userInput);
             ChatResponse chatResponse = generate(conversationService.getConversationById(conversationId));
             while (chatResponse.hasToolCalls()) {
-                AssistantMessage assistantMessage = (AssistantMessage) chatResponse.getResult().getOutput();
-                conversationService.addAssistantMessageToConversation(conversationId, assistantMessage);
+                AssistantMessage assistantMessage = addAssistantMessage(chatResponse, conversationId);
                 for (ToolCall toolCall : assistantMessage.getToolCalls()) {
                     try {
                         String toolResponseJson = executeTool(toolCall, objectMapper);
@@ -120,8 +126,7 @@ public class AgentOrchestrator {
                 }
                 chatResponse = generate(conversationService.getConversationById(conversationId));
             }
-            AssistantMessage finalMessage = (AssistantMessage) chatResponse.getResult().getOutput();
-            conversationService.addAssistantMessageToConversation(conversationId, finalMessage);
+            AssistantMessage finalMessage = addAssistantMessage(chatResponse, conversationId);
             return finalMessage.getText();
         } catch (Exception e) {
             return "An unknown error occurred, please try again";

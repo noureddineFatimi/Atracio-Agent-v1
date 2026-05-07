@@ -58,7 +58,7 @@ public class AgentOrchestratorTest {
                                          .build()
                                  )
                                  .build();
-    ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ChatClient.Builder builder = ChatClient.builder(GenAIChatModel);
     private final ToolShemas toolShemas = new ToolShemas();
     private final ToolDefinitionRegistry toolDefinitionRegistry = new ToolDefinitionRegistry(toolShemas);
@@ -74,8 +74,7 @@ public class AgentOrchestratorTest {
                                                     .maxMessages(10)
                                                     .build();
     private final ConversationService conversationService = new ConversationService(memory, builder);
-
-    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, systemPromptFactory, toolDefinitionRegistry, toolExecutor, conversationService);
+    private final AgentOrchestrator agentOrchestrator = new AgentOrchestrator(builder, systemPromptFactory, toolDefinitionRegistry, toolExecutor, conversationService, objectMapper);
 
     @Test 
     public void getToolCallArguments() throws JsonProcessingException {
