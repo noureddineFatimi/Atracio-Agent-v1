@@ -3,6 +3,7 @@ package atracio.agent.agent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.checkerframework.checker.units.qual.h;
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,8 +30,10 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,8 +46,9 @@ public class AgentOrchestrator {
 
     private final ChatClient chatClient;
     private final ToolExecutor toolExecutor;
+    private final ConversationService conversationService;
 
-    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor) {
+    public AgentOrchestrator(ChatClient.Builder chatClientBuilder, SystemPromptFactory systemPromptFactory,ToolDefinitionRegistry toolDefinitionRegistry, ToolExecutor toolExecutor, ConversationService conversationService) {
         this.chatClient = chatClientBuilder
                             .defaultAdvisors(new SimpleLoggerAdvisor())
                             .defaultSystem(systemPromptFactory.build())
@@ -54,6 +58,7 @@ public class AgentOrchestrator {
                                             .build())
                             .build();
         this.toolExecutor = toolExecutor;
+        this.conversationService = conversationService;
     }
 
     public ChatResponse generate(String userInput) {
@@ -69,37 +74,57 @@ public class AgentOrchestrator {
             .chatResponse();
     }
 
+    public String getToolCallId(ToolCall toolCall) {
+        String toolCallId = (toolCall.id() != null && !toolCall.id().isBlank())
+                    ? toolCall.id()
+                    : UUID.randomUUID().toString();
+        return toolCallId;
+    }
+
+    public String executeTool(ToolCall toolCall, ObjectMapper objectMapper) throws JsonProcessingException{
+        Map<String, Object> arguments = objectMapper.readValue(toolCall.arguments(),
+                            new TypeReference<Map<String, Object>>() {});
+                    ToolResponse toolResponse = toolExecutor.dispatche(toolCall.name(), arguments);
+                    String toolResponseJson = objectMapper.writeValueAsString(toolResponse);
+        return toolResponseJson;
+    }
+
+    private void addUserMessage(String conversationId, String userInput) {
+        UserMessage userMessage = UserMessage.builder().text(userInput).build();
+        conversationService.addUserMessageToConversation(conversationId, userMessage);
+    }
+
+    public void addToolResponseMessage(ToolCall toolCall, String toolResponseJson, String conversationId) {
+        ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(getToolCallId(toolCall), toolCall.name(), toolResponseJson);
+        conversationService.addToolResultToConversation(conversationId, response);
+    }
+
     public String chat(String userInput) {
+        String conversationId = "conv-001";
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            UserMessage userMessage = UserMessage.builder().text(userInput).build();
-            List<Message> history = new ArrayList<>();
-            history.add(userMessage);
-            ChatResponse chatResponse = generate(history);
-            AssistantMessage assistantMessage = (AssistantMessage) chatResponse.getResult().getOutput();
-            history.add(assistantMessage);
+            addUserMessage(conversationId, userInput);
+            ChatResponse chatResponse = generate(conversationService.getConversationById(conversationId));
             while (chatResponse.hasToolCalls()) {
-                List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+                AssistantMessage assistantMessage = (AssistantMessage) chatResponse.getResult().getOutput();
+                conversationService.addAssistantMessageToConversation(conversationId, assistantMessage);
                 for (ToolCall toolCall : assistantMessage.getToolCalls()) {
                     try {
-                        Map<String, Object> arguments = objectMapper.readValue(toolCall.arguments(), new TypeReference<Map<String, Object>>() {});
-                        ToolResponse toolResponse = toolExecutor.dispatche(toolCall.name(), arguments);
-                        String toolResponseJson = objectMapper.writeValueAsString(toolResponse);
-                        ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), toolResponseJson);
-                        responses.add(response);
+                        String toolResponseJson = executeTool(toolCall, objectMapper);
+                        addToolResponseMessage(toolCall, toolResponseJson, conversationId);
                     } catch (Exception e) {
                         ToolResponse toolResponse = ToolResponse.agentError(e.getMessage());
                         String toolResponseJson = objectMapper.writeValueAsString(toolResponse);
-                        ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), toolResponseJson);
-                        responses.add(response);
+                        addToolResponseMessage(toolCall, toolResponseJson, conversationId);
                     }
                 }
-                history.add(ToolResponseMessage.builder().responses(responses).build());
-                chatResponse = generate(history);
+                chatResponse = generate(conversationService.getConversationById(conversationId));
             }
-            return chatResponse.getResult().getOutput().getText();
+            AssistantMessage finalMessage = (AssistantMessage) chatResponse.getResult().getOutput();
+            conversationService.addAssistantMessageToConversation(conversationId, finalMessage);
+            return finalMessage.getText();
         } catch (Exception e) {
-            return "A unknown error occured, please try again";
+            return "An unknown error occurred, please try again";
         }
     }
 }
