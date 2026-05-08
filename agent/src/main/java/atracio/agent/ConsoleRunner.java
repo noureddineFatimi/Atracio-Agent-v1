@@ -1,59 +1,122 @@
 package atracio.agent;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.actuate.autoconfigure.wavefront.WavefrontProperties.Application;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
+import atracio.agent.agent.AgentOrchestrator;
+import atracio.agent.dto.ChatRequest;
+import atracio.agent.dto.ChatResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import atracio.agent.agent.AgentOrchestrator;
-import atracio.agent.tools.ToolDefinitionRegistry;
-
 import java.util.Scanner;
+import java.util.UUID;
 
+/**
+ * Console runner for local development and testing.
+ *
+ * Starts automatically when the application is ready and runs in a
+ * dedicated daemon thread alongside the embedded web server.
+ *
+ * Phase 4: wired to AgentOrchestrator — no longer a stub.
+ *
+ * Usage:
+ *   1. mvn spring-boot:run
+ *   2. Enter your Atracio bearer token when prompted (stored in memory for the session only)
+ *   3. Type any message and press Enter
+ *   4. Type 'exit' or 'quit' to stop the console runner (server keeps running)
+ *   5. Type 'reset' to clear the current conversation history
+ */
 @Component
-public class ConsoleRunner implements CommandLineRunner {
+public class ConsoleRunner {
 
-    @Autowired
-    private ConfigurableApplicationContext context;
+    private static final Logger log = LoggerFactory.getLogger(ConsoleRunner.class);
 
-    private final AgentOrchestrator agentOrchestrator;
+    private final AgentOrchestrator orchestrator;
 
-    public ConsoleRunner(AgentOrchestrator agentOrchestrator) {
-            this.agentOrchestrator = agentOrchestrator;
-        }
+    public ConsoleRunner(AgentOrchestrator orchestrator) {
+        this.orchestrator = orchestrator;
+    }
 
-    @Override
-    public void run(String... args) {
-        
+    @EventListener(ApplicationReadyEvent.class)
+    public void start() {
+        Thread thread = new Thread(this::runLoop, "console-runner");
+        thread.setDaemon(true);
+        thread.start();
+        log.info("Console runner started.");
+    }
+
+    private void runLoop() {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("=== Atracio Agent Console ===");
-        System.out.println("Type 'exit' to quit");
+        printBanner();
+
+        // Each console session gets a stable conversationId
+        String conversationId = "console-" + UUID.randomUUID().toString().substring(0, 8);
+        String tenant         = "demo";
+
+        // Prompt for bearer token once at startup
+        System.out.print("Atracio Bearer Token: ");
+        String bearerToken = scanner.hasNextLine() ? scanner.nextLine().trim() : "";
+
+        if (bearerToken.isBlank()) {
+            System.out.println("[warn] No token provided — tool calls will fail with 'unauthorized'.");
+            bearerToken = "no-token";
+        }
+
+        System.out.println();
+        System.out.println("Session started. conversationId=" + conversationId);
+        System.out.println("Type 'reset' to clear history, 'exit' to quit.");
+        System.out.println();
 
         while (true) {
-            System.out.print("\nUser: ");
+            System.out.print("You: ");
+
+            if (!scanner.hasNextLine()) break;
+
             String input = scanner.nextLine().trim();
 
-            if ("exit".equalsIgnoreCase(input)) {
-                System.out.println("Exiting...");
+            if (input.isBlank()) continue;
+
+            if ("exit".equalsIgnoreCase(input) || "quit".equalsIgnoreCase(input)) {
+                System.out.println("Console runner stopped.");
+                log.info("Console runner stopped by user.");
                 break;
             }
 
+            if ("reset".equalsIgnoreCase(input)) {
+                conversationId = "console-" + UUID.randomUUID().toString().substring(0, 8);
+                System.out.println("[reset] New conversation started. id=" + conversationId);
+                System.out.println();
+                continue;
+            }
+
             try {
-                String response = agentOrchestrator.chat(input);
-                System.out.println("Assistant: " + response);
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                ChatRequest  request  = new ChatRequest(input, conversationId, tenant, bearerToken);
+                ChatResponse response = orchestrator.chat(request);
+
+                System.out.println();
+                if (response.getToolUsed() != null) {
+                    String status = Boolean.TRUE.equals(response.getToolSuccess()) ? "✓" : "✗";
+                    System.out.println("Tool    : " + status + " " + response.getToolUsed());
+                }
+                System.out.println("Agent   : " + response.getAssistantMessage());
+                System.out.println();
+
+            } catch (Exception ex) {
+                System.out.println("[error] " + ex.getMessage());
+                log.error("Console runner error", ex);
+                System.out.println();
             }
         }
         scanner.close();
-        System.exit(SpringApplication.exit(context, () -> 0));
+    }
+
+    private void printBanner() {
+        System.out.println();
+        System.out.println("╔══════════════════════════════════════════╗");
+        System.out.println("║   Atracio Agent — Console Runner         ║");
+        System.out.println("╚══════════════════════════════════════════╝");
+        System.out.println();
     }
 }
