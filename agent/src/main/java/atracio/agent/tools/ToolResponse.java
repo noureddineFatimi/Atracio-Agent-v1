@@ -151,7 +151,7 @@ public class ToolResponse {
     }
 
     public static ToolResponse agentError(String error) {
-        return new ToolResponse(false, "", null, new ErrorPayload("error", error, -1, null), Map.of());
+        return new ToolResponse(false, "", null, new ErrorPayload("tool_mapping_error", error, -1, null), Map.of());
     }
 
     // -------------------------------------------------------------------------
