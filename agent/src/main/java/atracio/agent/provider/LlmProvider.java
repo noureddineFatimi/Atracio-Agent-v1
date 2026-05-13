@@ -43,11 +43,11 @@ public interface LlmProvider {
     class LlmResponse {
 
         private final String      text;
-        private final ToolCall    toolCall;
+        private final List<ToolCall>    toolCalls;
 
-        private LlmResponse(String text, ToolCall toolCall) {
+        private LlmResponse(String text, List<ToolCall> toolCalls) {
             this.text     = text;
-            this.toolCall = toolCall;
+            this.toolCalls = toolCalls;
         }
 
         // Factory methods
@@ -56,15 +56,15 @@ public interface LlmProvider {
             return new LlmResponse(text, null);
         }
 
-        public static LlmResponse toolCall(ToolCall toolCall) {
-            return new LlmResponse(null, toolCall);
+        public static LlmResponse toolCalls(List<ToolCall> toolCalls) {
+            return new LlmResponse(null, toolCalls);
         }
 
         // Accessors
 
-        public boolean  hasToolCall()  { return toolCall != null; }
+        public boolean  hasToolCalls()  { return toolCalls != null; }
         public String   getText()      { return text; }
-        public ToolCall getToolCall()  { return toolCall; }
+        public List<ToolCall> getToolCalls()  { return toolCalls; }
     }
 
     // -------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import atracio.agent.provider.LlmProvider.ToolCall;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -88,22 +89,46 @@ public class ConversationService {
      * @param toolName    the tool name (e.g. "document.search")
      * @param arguments   the raw argument string as provided by the LLM
      */
-    public void addAssistantToolCall(String conversationId,
-                                     String toolCallId,
-                                     String toolName,
-                                     String arguments) {
+    public void addAssistantToolCalls(String conversationId,
+                                     List<ToolCall> llmToolCalls
+                                ) {
         Map<String, Object> message = new LinkedHashMap<>();
         message.put("role",    "assistant");
         message.put("content", null);
-        message.put("tool_calls", List.of(Map.of(
-                "id",   toolCallId,
+        List<Map<String, Object>> toolCalls = new ArrayList<>();
+        for (ToolCall llmToolCall : llmToolCalls) {
+            toolCalls.add(Map.of(
+                "id",   llmToolCall.getId(),
                 "type", "function",
                 "function", Map.of(
-                        "name",      toolName,
-                        "arguments", arguments
+                        "name",      llmToolCall.getName(),
+                        "arguments", argumentsAsString(llmToolCall.getArguments())
                 )
-        )));
+        ));
+        }
+        message.put("tool_calls", toolCalls);
         append(conversationId, message);
+    }
+
+    /**
+     * Converts the tool call arguments map to a compact JSON string for history storage.
+     */
+    private String argumentsAsString(Map<String, Object> arguments) {
+        if (arguments == null) return "{}";
+        try {
+            StringBuilder sb = new StringBuilder("{");
+            arguments.forEach((k, v) -> {
+                sb.append("\"").append(k).append("\":");
+                if (v instanceof String s) sb.append("\"").append(s).append("\"");
+                else sb.append(v);
+                sb.append(",");
+            });
+            if (sb.charAt(sb.length() - 1) == ',') sb.deleteCharAt(sb.length() - 1);
+            sb.append("}");
+            return sb.toString();
+        } catch (Exception ex) {
+            return "{}";
+        }
     }
 
     /**
@@ -119,7 +144,7 @@ public class ConversationService {
     public void addToolResult(String conversationId,
                               String toolCallId,
                               String toolName,
-                              ToolResponse result) {
+                              ToolResponse result) throws JsonProcessingException {
         String content = summarise(toolName, result);
 
         Map<String, Object> message = Map.of(

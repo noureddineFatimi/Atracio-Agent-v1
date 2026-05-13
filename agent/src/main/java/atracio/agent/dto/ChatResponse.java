@@ -1,5 +1,7 @@
 package atracio.agent.dto;
 
+import java.util.List;
+
 /**
  * Outbound response from AgentOrchestrator — returned by ChatController.
  */
@@ -14,15 +16,10 @@ public class ChatResponse {
     /**
      * The name of the tool that was called to produce this response, if any.
      * Null if the LLM answered directly without calling a tool.
+     * Status field to know if the tool is executed successfully or not.
      * Useful for the UI to show what action was taken.
      */
-    private String toolUsed;
-
-    /**
-     * Whether the tool call succeeded.
-     * Null if no tool was called.
-     */
-    private Boolean toolSuccess;
+    private List<ToolCallDto> toolCalls;
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -30,27 +27,11 @@ public class ChatResponse {
 
     public ChatResponse() {}
 
-    private ChatResponse(String assistantMessage, String conversationId,
-                         String toolUsed, Boolean toolSuccess) {
+    public ChatResponse(String assistantMessage, String conversationId,
+                         List<ToolCallDto> toolCalls) {
         this.assistantMessage = assistantMessage;
         this.conversationId   = conversationId;
-        this.toolUsed         = toolUsed;
-        this.toolSuccess      = toolSuccess;
-    }
-
-    // -------------------------------------------------------------------------
-    // Factory methods
-    // -------------------------------------------------------------------------
-
-    /** Direct LLM reply — no tool was called. */
-    public static ChatResponse direct(String message, String conversationId) {
-        return new ChatResponse(message, conversationId, null, null);
-    }
-
-    /** Reply produced after a tool was called. */
-    public static ChatResponse withTool(String message, String conversationId,
-                                        String toolUsed, boolean toolSuccess) {
-        return new ChatResponse(message, conversationId, toolUsed, toolSuccess);
+        this.toolCalls         = toolCalls;
     }
 
     // -------------------------------------------------------------------------
@@ -63,9 +44,6 @@ public class ChatResponse {
     public String  getConversationId()              { return conversationId; }
     public void    setConversationId(String v)      { this.conversationId = v; }
 
-    public String  getToolUsed()                    { return toolUsed; }
-    public void    setToolUsed(String v)            { this.toolUsed = v; }
-
-    public Boolean getToolSuccess()                 { return toolSuccess; }
-    public void    setToolSuccess(Boolean v)        { this.toolSuccess = v; }
+    public List<ToolCallDto>  getToolCalls()                    { return toolCalls; }
+    public void    setToolCalls(List<ToolCallDto> v)            { this.toolCalls = v; }
 }

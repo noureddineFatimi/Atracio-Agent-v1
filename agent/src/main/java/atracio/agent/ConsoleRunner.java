@@ -3,6 +3,8 @@ package atracio.agent;
 import atracio.agent.agent.AgentOrchestrator;
 import atracio.agent.dto.ChatRequest;
 import atracio.agent.dto.ChatResponse;
+import atracio.agent.dto.ToolCallDto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -96,9 +98,11 @@ public class ConsoleRunner {
                 ChatResponse response = orchestrator.chat(request);
 
                 System.out.println();
-                if (response.getToolUsed() != null) {
-                    String status = Boolean.TRUE.equals(response.getToolSuccess()) ? "✓" : "✗";
-                    System.out.println("Tool    : " + status + " " + response.getToolUsed());
+                if (response.getToolCalls() != null) {
+                    for (ToolCallDto toolCallDto : response.getToolCalls()) {
+                        String status = toolCallDto.status() == "success" ? "success" : "error";
+                        System.out.println("Tool    : " + status + " in execution tool " + toolCallDto.tool());
+                    }
                 }
                 System.out.println("Agent   : " + response.getAssistantMessage());
                 System.out.println();

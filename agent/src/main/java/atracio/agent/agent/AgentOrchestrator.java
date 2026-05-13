@@ -2,16 +2,21 @@ package atracio.agent.agent;
 
 import atracio.agent.dto.ChatRequest;
 import atracio.agent.dto.ChatResponse;
+import atracio.agent.dto.ToolCallDto;
 import atracio.agent.provider.LlmProvider;
 import atracio.agent.provider.LlmProvider.LlmResponse;
 import atracio.agent.provider.LlmProvider.ToolCall;
 import atracio.agent.tools.ToolDispatcher;
-import atracio.agent.tools.ToolDefinitionRegistry;
+import atracio.agent.tools.ToolDefinitionRegistry;               
 import atracio.agent.tools.ToolResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -67,7 +72,7 @@ public class AgentOrchestrator {
      * @param request ChatRequest with userMessage, conversationId, tenant, bearerToken
      * @return ChatResponse with assistantMessage and metadata
      */
-    public ChatResponse chat(ChatRequest request) {
+    public ChatResponse chat(ChatRequest request) throws JsonProcessingException{
         validate(request);
 
         String conversationId = request.getConversationId();
@@ -84,63 +89,66 @@ public class AgentOrchestrator {
         String                    systemPrompt = systemPromptFactory.build();
         List<Map<String, Object>> history      = conversationService.getHistory(conversationId);
         List<Map<String, Object>> tools        = toolDefinitionRegistry.getAll();
-        
-        // 3. First LLM call
-        LlmResponse llmResponse = llmProvider.chat(systemPrompt, history, tools);
+
+        LlmResponse llmResponse;
+
+        List<ToolCallDto> toolCallDtos = new ArrayList<>();
 
         // 4a. LLM requested a tool call
-        if (llmResponse.hasToolCall()) {
-            ToolCall toolCall = llmResponse.getToolCall();
-            log.info("AgentOrchestrator: [{}] tool call requested='{}'",
-                    conversationId, toolCall.getName());
+        while (true) {
+            // 3. First LLM call
+            llmResponse = llmProvider.chat(systemPrompt, history, tools);
+            if (!llmResponse.hasToolCalls()) {
+                log.info("AgentOrchestrator: [{}]  no tool calls requested", conversationId);
+                break;
+            }
+
+            List<ToolCall> toolCalls = llmResponse.getToolCalls();
+            log.info("AgentOrchestrator: [{}] tool calls requested='{}'",
+                    conversationId, toolCalls);
 
             // Record the assistant's tool call decision in history
-            conversationService.addAssistantToolCall(
+            conversationService.addAssistantToolCalls(
                     conversationId,
-                    toolCall.getId(),
-                    toolCall.getName(),
-                    argumentsAsString(toolCall.getArguments())
-            );
+                    toolCalls
+            ); 
 
-            // Execute the tool
-            ToolResponse toolResult = toolDispatcher.dispatch(toolCall, tenant, bearerToken);
-            log.info("AgentOrchestrator: [{}] tool='{}' ok={}",
+            for (ToolCall toolCall : toolCalls) {
+                ToolResponse toolResult = toolDispatcher.dispatch(toolCall, tenant, bearerToken);
+                // Execute the tool
+            
+                log.info("AgentOrchestrator: [{}] tool='{}' ok={}",
                     conversationId, toolCall.getName(), toolResult.isOk());
 
-            // Add tool result to history
-            conversationService.addToolResult(
-                    conversationId,
-                    toolCall.getId(),
-                    toolCall.getName(),
-                    toolResult
-            );
+                // Add tool result to history
+                conversationService.addToolResult(
+                        conversationId,
+                        toolCall.getId(),
+                        toolCall.getName(),
+                        toolResult
+                );
 
+                log.info("AgentOrchestrator: [{}] tool='{}' success={} tool_response_data={}",
+                    conversationId, toolCall.getName(), toolResult.isOk() ,toolResult.getData());
+
+                toolCallDtos.add(new ToolCallDto(toolResult.getTool(), toolResult.isOk() == true ? "success" : "failed"));
+            }
             // Second LLM call — produce natural language reply from tool result
-            List<Map<String, Object>> updatedHistory =
-                    conversationService.getHistory(conversationId);
+            history = conversationService.getHistory(conversationId);
+        }
 
-            LlmResponse finalResponse = llmProvider.chat(systemPrompt, updatedHistory, tools);
-            String assistantMessage = finalResponse.getText() != null
-                    ? finalResponse.getText()
-                    : fallbackMessage(toolResult);
+            String assistantMessage = llmResponse.getText() != null
+                    ? llmResponse.getText()
+                    : fallbackMessage();
 
             conversationService.addAssistantMessage(conversationId, assistantMessage);
 
-            log.info("AgentOrchestrator: [{}] reply produced after tool call", conversationId);
-            return ChatResponse.withTool(
+            log.info("AgentOrchestrator: [{}] reply with the response = \"{}\" ", conversationId, assistantMessage);
+            return new ChatResponse(
                     assistantMessage,
                     conversationId,
-                    toolCall.getName(),
-                    toolResult.isOk()
+                    toolCallDtos.size() == 0 ? null : toolCallDtos
             );
-        }
-
-        // 4b. LLM returned a direct text reply
-        String assistantMessage = llmResponse.getText();
-        conversationService.addAssistantMessage(conversationId, assistantMessage);
-
-        log.info("AgentOrchestrator: [{}] direct reply produced", conversationId);
-        return ChatResponse.direct(assistantMessage, conversationId);
     }
 
     // -------------------------------------------------------------------------
@@ -166,31 +174,7 @@ public class AgentOrchestrator {
      * Fallback message when the second LLM call returns null text.
      * This should never happen in practice but prevents a NullPointerException.
      */
-    private String fallbackMessage(ToolResponse toolResult) {
-        if (toolResult.isOk()) {
-            return "The operation completed successfully.";
-        }
-        return "An error occurred: " + toolResult.getError().message();
-    }
-
-    /**
-     * Converts the tool call arguments map to a compact JSON string for history storage.
-     */
-    private String argumentsAsString(Map<String, Object> arguments) {
-        if (arguments == null) return "{}";
-        try {
-            StringBuilder sb = new StringBuilder("{");
-            arguments.forEach((k, v) -> {
-                sb.append("\"").append(k).append("\":");
-                if (v instanceof String s) sb.append("\"").append(s).append("\"");
-                else sb.append(v);
-                sb.append(",");
-            });
-            if (sb.charAt(sb.length() - 1) == ',') sb.deleteCharAt(sb.length() - 1);
-            sb.append("}");
-            return sb.toString();
-        } catch (Exception ex) {
-            return "{}";
-        }
+    private String fallbackMessage() {
+        return "Empty response";
     }
 }
