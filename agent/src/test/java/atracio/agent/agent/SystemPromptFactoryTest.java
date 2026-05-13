@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SystemPromptFactoryTest {
 
     private final SystemPromptFactory factory = new SystemPromptFactory();
-    private static final Logger log = LoggerFactory.getLogger(AgentOrchestratorTest.class);
+    private static final Logger log = LoggerFactory.getLogger(SystemPromptFactoryTest.class);
 
     @Test
     void shouldContainTenantName() {
