@@ -13,7 +13,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.context.annotation.Profile;
@@ -24,22 +24,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * LlmProvider implementation backed by Google Gemini via Spring AI.
+ * LlmProvider implementation backed by Ollama via Spring AI.
  *
- * Active under profile "gemini".
- *
- * Configuration (application.yml):
- *   spring:
- *     ai:
- *       google:
- *         gemini:
- *           api-key: ${GEMINI_API_KEY}
- *           chat:
- *             options:
- *               model:       ${GEMINI_MODEL:gemini-2.0-flash}
- *               temperature: 0.2
+ * Active under profile "ollama".
  *
  * The logic is identical to OpenAiChatProvider — only the options class
  * and the Spring AI starter differ. Everything else (message conversion,
@@ -47,14 +37,14 @@ import java.util.Set;
  * normalises the provider differences behind ChatClient.
  */
 @Component
-public class GenAiChatProvider implements LlmProvider {
+public class OllamaChatProvider implements LlmProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(GenAiChatProvider.class);
+    private static final Logger log = LoggerFactory.getLogger(OllamaChatProvider.class);
 
     private final ChatClient   chatClient;
     private final ObjectMapper objectMapper;
 
-    public GenAiChatProvider(ChatClient.Builder chatClientBuilder,
+    public OllamaChatProvider(ChatClient.Builder chatClientBuilder,
                                ObjectMapper objectMapper) {
         this.chatClient   = chatClientBuilder.build();
         this.objectMapper = objectMapper;
@@ -81,9 +71,9 @@ public class GenAiChatProvider implements LlmProvider {
             return parseResponse(response);
 
         } catch (Exception ex) {
-            log.error("GeminiChatProvider: LLM call failed — {}", ex.getMessage(), ex);
+            log.error("OllamaChatProvider: LLM call failed — {}", ex.getMessage(), ex);
             return LlmResponse.text(
-                    "I'm sorry, I encountered an error communicating with Gemini. " +
+                    "I'm sorry, I encountered an error communicating with Ollama. " +
                     "Please try again.");
         }
     }
@@ -102,8 +92,10 @@ public class GenAiChatProvider implements LlmProvider {
             Object content = entry.get("content");
 
             switch (role) {
-                case "user" ->
+                case "user" ->{
                     messages.add(new UserMessage((String) content));
+                    log.info("OllamaChatProvider: user_message_in_prompt={}", new UserMessage((String) content));
+                }
 
                 case "assistant" -> {
                     @SuppressWarnings("unchecked")
@@ -111,19 +103,26 @@ public class GenAiChatProvider implements LlmProvider {
                             (List<Map<String, Object>>) entry.get("tool_calls");
 
                     if (toolCalls != null && !toolCalls.isEmpty()) {
-                        Map<String, Object> tc = toolCalls.get(0);
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> fn = (Map<String, Object>) tc.get("function");
+
                         List<org.springframework.ai.chat.messages.AssistantMessage.ToolCall> toolCallsList = new ArrayList<>();
-                        org.springframework.ai.chat.messages.AssistantMessage.ToolCall toolCall = new org.springframework.ai.chat.messages.AssistantMessage.ToolCall(tc.get("id") instanceof String id ? id : "", "function", fn.get("name")instanceof String name ? name : "", fn.get("arguments")instanceof String arguments ? arguments  : "");
-                        toolCallsList.add(toolCall);
+
+                        for (Map<String, Object> tc : toolCalls) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> fn = (Map<String, Object>) tc.get("function");
+                            org.springframework.ai.chat.messages.AssistantMessage.ToolCall toolCall = new org.springframework.ai.chat.messages.AssistantMessage.ToolCall(tc.get("id") instanceof String id ? id : "", "function", fn.get("name")instanceof String name ? name : "", fn.get("arguments")instanceof String arguments ? arguments  : "");
+                            toolCallsList.add(toolCall);
+                        }
+                        
                         AssistantMessage assistantMessage = AssistantMessage.builder()
                                                             .content("")
                                                             .toolCalls(toolCallsList)
                                                             .build();
                         messages.add(assistantMessage);
+                        log.info("OllamaChatProvider: assistant_message_in_prompt={}", assistantMessage);
                     } else {
                         messages.add(new AssistantMessage(
+                                content != null ? (String) content : ""));
+                        log.info("OllamaChatProvider: assistant_message_in_prompt={}", new AssistantMessage(
                                 content != null ? (String) content : ""));
                     }
                 }
@@ -136,16 +135,19 @@ public class GenAiChatProvider implements LlmProvider {
                     messages.add(ToolResponseMessage.builder()
                                     .responses(List.of(toolResponse))
                                     .build());
+                    log.info("OllamaChatProvider: tool_response_message_in_prompt={}", ToolResponseMessage.builder()
+                                    .responses(List.of(toolResponse))
+                                    .build());
                 }
                 default ->
-                    log.warn("GeminiChatProvider: unknown role '{}' — skipping", role);
+                    log.warn("OllamaChatProvider: unknown role '{}' — skipping", role);
             }
         }
         return messages;
     }
 
     // -------------------------------------------------------------------------
-    // Options — Gemini-specific chat options with tool definitions
+    // Options — ollama-specific chat options with tool definitions
     // -------------------------------------------------------------------------
 
     private static List<ToolCallback> getToolsCallBackList(List<Map<String, Object>> toolsShemasMap) {
@@ -180,17 +182,14 @@ public class GenAiChatProvider implements LlmProvider {
                 .build();
     }
 
-    private GoogleGenAiChatOptions buildOptions(List<Map<String, Object>> tools) {
-        GoogleGenAiChatOptions.Builder builder = GoogleGenAiChatOptions.builder()
+    private OllamaChatOptions buildOptions(List<Map<String, Object>> tools) {
+        OllamaChatOptions.Builder builder = OllamaChatOptions.builder()
                 .temperature(0.2);
         
         if (tools != null && !tools.isEmpty()) {
-            
-            builder.internalToolExecutionEnabled(false)
-            .toolCallbacks(getToolsCallBackList(tools))
-            .build();
+            builder = builder.internalToolExecutionEnabled(false)
+            .toolCallbacks(getToolsCallBackList(tools));
         }
-        
         return builder.build();
     }
 
@@ -199,28 +198,35 @@ public class GenAiChatProvider implements LlmProvider {
     // -------------------------------------------------------------------------
 
     private LlmResponse parseResponse(ChatResponse response) {
+        log.info("OllamaChatProvider: received response from LLM: {}", response);
         if (response == null || response.getResult() == null) {
-            log.warn("GeminiChatProvider: empty response from LLM");
+            log.warn("OllamaChatProvider: empty response from LLM");
             return LlmResponse.text("I did not receive a response. Please try again.");
         }
 
         AssistantMessage message = response.getResult().getOutput();
-        List<org.springframework.ai.chat.messages.AssistantMessage.ToolCall> toolCalls = message.getToolCalls();
+        List<org.springframework.ai.chat.messages.AssistantMessage.ToolCall> toolCallsFromLlmResponse = message.getToolCalls();
 
-        if (toolCalls != null && !toolCalls.isEmpty()) {
-            org.springframework.ai.chat.messages.AssistantMessage.ToolCall tc   = toolCalls.get(0);
-            String              id   = tc.id();
+        if (toolCallsFromLlmResponse != null && !toolCallsFromLlmResponse.isEmpty()) {
+            List<ToolCall> toolCalls = new ArrayList<>();
+            for (org.springframework.ai.chat.messages.AssistantMessage.ToolCall toolCallFromLlmResponse : toolCallsFromLlmResponse) {
+                String id = toolCallFromLlmResponse.id();
+                if (id == null || id.isBlank()) {
+                    id = "call_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+                }
+                String              name = toolCallFromLlmResponse.name();
+                String              args = toolCallFromLlmResponse.arguments();
+                Map<String, Object> parsedArgs = parseArguments(args);
 
-            String              name = tc.name();
-            String              args = tc.arguments();
-
-            Map<String, Object> parsedArgs = parseArguments(args);
-            log.debug("GeminiChatProvider: tool call id={} name={}", id, name);
-            return LlmResponse.toolCall(new ToolCall(id, name, parsedArgs));
+                log.debug("OllamaChatProvider: tool call id={} name={}", id, name);
+                
+                toolCalls.add(new ToolCall(id, name, parsedArgs));
+            }
+            return LlmResponse.toolCalls(toolCalls);
         }
 
         String text = message.getText();
-        log.debug("GeminiChatProvider: text reply length={}", text != null ? text.length() : 0);
+        log.debug("OllamaChatProvider: text reply length={}", text != null ? text.length() : 0);
         return LlmResponse.text(text != null ? text : "");
     }
 
@@ -229,7 +235,7 @@ public class GenAiChatProvider implements LlmProvider {
         try {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (JsonProcessingException ex) {
-            log.warn("GeminiChatProvider: failed to parse tool arguments — {}", json);
+            log.warn("OllamaChatProvider: failed to parse tool arguments — {}", json);
             return Map.of();
         }
     }
