@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: mock, openai
+    active: mock, gemini
   ai:
     chat:
       client: 
