@@ -24,7 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.UUID; 
 
 /**
  * LlmProvider implementation backed by Ollama via Spring AI.
@@ -45,9 +45,9 @@ public class OllamaChatProvider implements LlmProvider {
     private final ChatClient   chatClient;
     private final ObjectMapper objectMapper;
 
-    public OllamaChatProvider(ChatClient.Builder chatClientBuilder,
+    public OllamaChatProvider(ChatClient ollamaChatClient,
                                ObjectMapper objectMapper) {
-        this.chatClient   = chatClientBuilder.build();
+        this.chatClient   = ollamaChatClient;
         this.objectMapper = objectMapper;
     }
 
@@ -240,4 +240,4 @@ public class OllamaChatProvider implements LlmProvider {
             return Map.of();
         }
     }
-}
+} 
