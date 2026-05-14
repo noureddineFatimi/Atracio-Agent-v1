@@ -72,7 +72,7 @@ public class AgentOrchestrator {
      * @param request ChatRequest with userMessage, conversationId, tenant, bearerToken
      * @return ChatResponse with assistantMessage and metadata
      */
-    public ChatResponse chat(ChatRequest request) throws JsonProcessingException{
+    public ChatResponse chat(ChatRequest request) {
         validate(request);
 
         String conversationId = request.getConversationId();

@@ -144,7 +144,7 @@ public class ConversationService {
     public void addToolResult(String conversationId,
                               String toolCallId,
                               String toolName,
-                              ToolResponse result) throws JsonProcessingException {
+                              ToolResponse result) {
         String content = summarise(toolName, result);
 
         Map<String, Object> message = Map.of(
