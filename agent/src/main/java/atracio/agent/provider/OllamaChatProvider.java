@@ -37,6 +37,7 @@ import java.util.UUID;
  * normalises the provider differences behind ChatClient.
  */
 @Component
+@Profile("ollama")
 public class OllamaChatProvider implements LlmProvider {
 
     private static final Logger log = LoggerFactory.getLogger(OllamaChatProvider.class);

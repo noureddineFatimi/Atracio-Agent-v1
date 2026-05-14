@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:mock}
+    active: mock, ollama
   ai:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
@@ -20,4 +20,4 @@ management:
         include: health, env
 
 atracio:
-  base-url: ${ATRACIO_BASE_URL:https://demo.prod.atracio.com}
+  base-url: ${ATRACIO_BASE_URL}
