@@ -45,7 +45,7 @@ public interface LlmProvider {
         private final String      text;
         private final List<ToolCall>    toolCalls;
 
-        private LlmResponse(String text, List<ToolCall> toolCalls) {
+        public LlmResponse(String text, List<ToolCall> toolCalls) {
             this.text     = text;
             this.toolCalls = toolCalls;
         }

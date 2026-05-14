@@ -2,6 +2,7 @@ package atracio.agent.agent;
 
 import atracio.agent.dto.ChatRequest;
 import atracio.agent.dto.ChatResponse;
+import atracio.agent.dto.ToolCallDto;
 import atracio.agent.provider.LlmProvider;
 import atracio.agent.provider.LlmProvider.LlmResponse;
 import atracio.agent.provider.LlmProvider.ToolCall;
@@ -11,10 +12,12 @@ import atracio.agent.tools.ToolResponse;
 import atracio.agent.tools.ToolShemas;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,21 +26,26 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AgentOrchestratorTest {
 
-    @Mock private LlmProvider         llmProvider;
-    @Mock private ToolDispatcher      toolDispatcher;
+    @Mock
+    private LlmProvider llmProvider;
 
-    private SystemPromptFactory    systemPromptFactory;
-    private ConversationService    conversationService;
+    @Mock
+    private ToolDispatcher toolDispatcher;
+
+    private SystemPromptFactory systemPromptFactory;
+    private ConversationService conversationService;
     private ToolDefinitionRegistry toolDefinitionRegistry;
-    private AgentOrchestrator      orchestrator;
+    private AgentOrchestrator orchestrator;
     private ToolShemas toolShemas;
 
     private static final String CONV_ID = "conv-test-001";
@@ -46,11 +54,17 @@ class AgentOrchestratorTest {
 
     @BeforeEach
     void setUp() {
-        systemPromptFactory    = new SystemPromptFactory();
-        conversationService    = new ConversationService(new ObjectMapper());
+
+        systemPromptFactory = new SystemPromptFactory();
+
+        conversationService =
+                new ConversationService(new ObjectMapper());
+
         toolShemas = new ToolShemas();
-        toolDefinitionRegistry = new ToolDefinitionRegistry(toolShemas);
-        
+
+        toolDefinitionRegistry =
+                new ToolDefinitionRegistry(toolShemas);
+
         orchestrator = new AgentOrchestrator(
                 llmProvider,
                 systemPromptFactory,
@@ -61,7 +75,12 @@ class AgentOrchestratorTest {
     }
 
     private ChatRequest request(String message) {
-        return new ChatRequest(message, CONV_ID, TENANT, TOKEN);
+        return new ChatRequest(
+                message,
+                CONV_ID,
+                TENANT,
+                TOKEN
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -73,28 +92,49 @@ class AgentOrchestratorTest {
 
         @Test
         void llmRepliesDirectly() {
+
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.text("Hello! How can I help you?"));
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "Hello! How can I help you?"
+                            )
+                    );
 
-            ChatResponse response = orchestrator.chat(request("Hello"));
+            ChatResponse response =
+                    orchestrator.chat(request("Hello"));
 
-            assertThat(response.getAssistantMessage()).isEqualTo("Hello! How can I help you?");
-            assertThat(response.getConversationId()).isEqualTo(CONV_ID);
-            assertThat(response.getToolUsed()).isNull();
-            assertThat(response.getToolSuccess()).isNull();
+            assertThat(response.getAssistantMessage())
+                    .isEqualTo("Hello! How can I help you?");
+
+            assertThat(response.getConversationId())
+                    .isEqualTo(CONV_ID);
+
+            assertThat(response.getToolCalls())
+                    .isNull();
         }
 
         @Test
         void historyContainsBothUserAndAssistantMessages() {
+
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.text("Sure, here you go."));
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "Sure, here you go."
+                            )
+                    );
 
             orchestrator.chat(request("Show me orders"));
 
-            List<Map<String, Object>> history = conversationService.getHistory(CONV_ID);
+            List<Map<String, Object>> history =
+                    conversationService.getHistory(CONV_ID);
+
             assertThat(history).hasSize(2);
-            assertThat(history.get(0).get("role")).isEqualTo("user");
-            assertThat(history.get(1).get("role")).isEqualTo("assistant");
+
+            assertThat(history.get(0).get("role"))
+                    .isEqualTo("user");
+
+            assertThat(history.get(1).get("role"))
+                    .isEqualTo("assistant");
         }
     }
 
@@ -107,85 +147,280 @@ class AgentOrchestratorTest {
 
         @Test
         void llmRequestsToolThenProducesFinalReply() {
-            ToolCall toolCall = new ToolCall("call_001", "document.search",
-                    Map.of("entity", "SalesOrder", "filter", "ACME"));
 
-            // First call → tool request; second call → final reply
+            ToolCall toolCall = new ToolCall(
+                    "call_001",
+                    "document.search",
+                    Map.of(
+                            "entity", "SalesOrder",
+                            "filter", "ACME"
+                    )
+            );
+
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.toolCall(toolCall))
-                    .thenReturn(LlmResponse.text("I found 2 sales orders for ACME."));
+                    .thenReturn(
+                            LlmResponse.toolCalls(
+                                    List.of(toolCall)
+                            )
+                    )
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "I found 2 sales orders for ACME."
+                            )
+                    );
 
-            when(toolDispatcher.dispatch(eq(toolCall), eq(TENANT), eq(TOKEN)))
-                    .thenReturn(ToolResponse.success("document.search",
-                            Map.of("totalElements", 2), TENANT, "/entities/list/SalesOrder"));
+            when(toolDispatcher.dispatch(
+                    eq(toolCall),
+                    eq(TENANT),
+                    eq(TOKEN)
+            ))
+                    .thenReturn(
+                            ToolResponse.success(
+                                    "document.search",
+                                    Map.of("totalElements", 2),
+                                    TENANT,
+                                    "/entities/list/SalesOrder"
+                            )
+                    );
 
-            ChatResponse response = orchestrator.chat(request("Show me orders for ACME"));
+            ChatResponse response =
+                    orchestrator.chat(
+                            request("Show me orders for ACME")
+                    );
 
             assertThat(response.getAssistantMessage())
-                    .isEqualTo("I found 2 sales orders for ACME.");
-            assertThat(response.getToolUsed()).isEqualTo("document.search");
-            assertThat(response.getToolSuccess()).isTrue();
+                    .isEqualTo(
+                            "I found 2 sales orders for ACME."
+                    );
+
+            assertThat(response.getToolCalls())
+                    .hasSize(1);
+
+            ToolCallDto dto =
+                    response.getToolCalls().get(0);
+
+            assertThat(dto.tool())
+                    .isEqualTo("document.search");
+
+            assertThat(dto.status())
+                    .isEqualTo("success");
         }
 
         @Test
         void historyHas4MessagesAfterToolCallTurn() {
-            ToolCall toolCall = new ToolCall("call_002", "document.search",
-                    Map.of("entity", "PurchaseOrder"));
+
+            ToolCall toolCall = new ToolCall(
+                    "call_002",
+                    "document.search",
+                    Map.of("entity", "PurchaseOrder")
+            );
 
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.toolCall(toolCall))
-                    .thenReturn(LlmResponse.text("Here are your purchase orders."));
+                    .thenReturn(
+                            LlmResponse.toolCalls(
+                                    List.of(toolCall)
+                            )
+                    )
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "Here are your purchase orders."
+                            )
+                    );
 
             when(toolDispatcher.dispatch(any(), any(), any()))
-                    .thenReturn(ToolResponse.success("document.search",
-                            Map.of("totalElements", 1), TENANT, "/entities/list/PurchaseOrder"));
+                    .thenReturn(
+                            ToolResponse.success(
+                                    "document.search",
+                                    Map.of("totalElements", 1),
+                                    TENANT,
+                                    "/entities/list/PurchaseOrder"
+                            )
+                    );
 
             orchestrator.chat(request("Find purchase orders"));
 
-            List<Map<String, Object>> history = conversationService.getHistory(CONV_ID);
-            // user | assistant(tool_call) | tool(result) | assistant(final)
+            List<Map<String, Object>> history =
+                    conversationService.getHistory(CONV_ID);
+
+            // user | assistant(tool_call)
+            // | tool(result) | assistant(final)
+
             assertThat(history).hasSize(4);
-            assertThat(history.get(0).get("role")).isEqualTo("user");
-            assertThat(history.get(1).get("role")).isEqualTo("assistant");
-            assertThat(history.get(2).get("role")).isEqualTo("tool");
-            assertThat(history.get(3).get("role")).isEqualTo("assistant");
+
+            assertThat(history.get(0).get("role"))
+                    .isEqualTo("user");
+
+            assertThat(history.get(1).get("role"))
+                    .isEqualTo("assistant");
+
+            assertThat(history.get(2).get("role"))
+                    .isEqualTo("tool");
+
+            assertThat(history.get(3).get("role"))
+                    .isEqualTo("assistant");
         }
 
         @Test
         void toolFailureIsReflectedInResponse() {
-            ToolCall toolCall = new ToolCall("call_003", "document.get_details",
-                    Map.of("entity", "SalesOrder", "id", 999));
+
+            ToolCall toolCall = new ToolCall(
+                    "call_003",
+                    "document.get_details",
+                    Map.of(
+                            "entity", "SalesOrder",
+                            "id", 999
+                    )
+            );
 
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.toolCall(toolCall))
-                    .thenReturn(LlmResponse.text("The document was not found."));
+                    .thenReturn(
+                            LlmResponse.toolCalls(
+                                    List.of(toolCall)
+                            )
+                    )
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "The document was not found."
+                            )
+                    );
 
             when(toolDispatcher.dispatch(any(), any(), any()))
-                    .thenReturn(ToolResponse.toolError("document.get_details",
-                            "not_found", "SalesOrder 999 not found.", TENANT, "/entities/details/" + "SalesOrder" + "/" + "999"));
+                    .thenReturn(
+                            ToolResponse.toolError(
+                                    "document.get_details",
+                                    "not_found",
+                                    "SalesOrder 999 not found.",
+                                    TENANT,
+                                    "/entities/details/SalesOrder/999"
+                            )
+                    );
 
-            ChatResponse response = orchestrator.chat(request("Get order 999"));
+            ChatResponse response =
+                    orchestrator.chat(request("Get order 999"));
 
-            assertThat(response.getToolSuccess()).isFalse();
-            assertThat(response.getToolUsed()).isEqualTo("document.get_details");
+            assertThat(response.getToolCalls())
+                    .hasSize(1);
+
+            ToolCallDto dto =
+                    response.getToolCalls().get(0);
+
+            assertThat(dto.tool())
+                    .isEqualTo("document.get_details");
+
+            assertThat(dto.status())
+                    .isEqualTo("failed");
         }
 
         @Test
         void toolDispatcherIsCalledWithCorrectArguments() {
-            ToolCall toolCall = new ToolCall("call_004", "partner.get_summary",
-                    Map.of("partnerType", "client", "partnerId", 44));
+
+            ToolCall toolCall = new ToolCall(
+                    "call_004",
+                    "partner.get_summary",
+                    Map.of(
+                            "partnerType", "client",
+                            "partnerId", 44
+                    )
+            );
 
             when(llmProvider.chat(any(), any(), any()))
-                    .thenReturn(LlmResponse.toolCall(toolCall))
-                    .thenReturn(LlmResponse.text("Client summary ready."));
+                    .thenReturn(
+                            LlmResponse.toolCalls(
+                                    List.of(toolCall)
+                            )
+                    )
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "Client summary ready."
+                            )
+                    );
 
             when(toolDispatcher.dispatch(any(), any(), any()))
-                    .thenReturn(ToolResponse.success("partner.get_summary",
-                            Map.of("turnover", 125000.0), TENANT, "/client/44"));
+                    .thenReturn(
+                            ToolResponse.success(
+                                    "partner.get_summary",
+                                    Map.of("turnover", 125000.0),
+                                    TENANT,
+                                    "/client/44"
+                            )
+                    );
 
-            orchestrator.chat(request("Show client 44 summary"));
+            orchestrator.chat(
+                    request("Show client 44 summary")
+            );
 
-            verify(toolDispatcher).dispatch(eq(toolCall), eq(TENANT), eq(TOKEN));
+            verify(toolDispatcher)
+                    .dispatch(
+                            eq(toolCall),
+                            eq(TENANT),
+                            eq(TOKEN)
+                    );
+        }
+
+        @Test
+        void multipleToolCallsAreHandled() {
+
+            ToolCall tc1 = new ToolCall(
+                    "call_101",
+                    "document.search",
+                    Map.of("entity", "SalesOrder")
+            );
+
+            ToolCall tc2 = new ToolCall(
+                    "call_102",
+                    "partner.get_summary",
+                    Map.of("partnerId", 10)
+            );
+
+            when(llmProvider.chat(any(), any(), any()))
+                    .thenReturn(
+                            LlmResponse.toolCalls(
+                                    List.of(tc1, tc2)
+                            )
+                    )
+                    .thenReturn(
+                            LlmResponse.text(
+                                    "Both operations completed."
+                            )
+                    );
+
+            when(toolDispatcher.dispatch(eq(tc1), any(), any()))
+                    .thenReturn(
+                            ToolResponse.success(
+                                    "document.search",
+                                    Map.of("totalElements", 5),
+                                    TENANT,
+                                    "/entities/list/SalesOrder"
+                            )
+                    );
+
+            when(toolDispatcher.dispatch(eq(tc2), any(), any()))
+                    .thenReturn(
+                            ToolResponse.success(
+                                    "partner.get_summary",
+                                    Map.of("turnover", 7000),
+                                    TENANT,
+                                    "/client/10"
+                            )
+                    );
+
+            ChatResponse response =
+                    orchestrator.chat(
+                            request("Run both operations")
+                    );
+
+            assertThat(response.getToolCalls())
+                    .hasSize(2);
+
+            assertThat(
+                    response.getToolCalls()
+                            .stream()
+                            .map(ToolCallDto::tool)
+            )
+                    .containsExactly(
+                            "document.search",
+                            "partner.get_summary"
+                    );
         }
     }
 
@@ -198,28 +433,69 @@ class AgentOrchestratorTest {
 
         @Test
         void nullRequestThrows() {
-            assertThatThrownBy(() -> orchestrator.chat(null))
-                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThatThrownBy(() ->
+                    orchestrator.chat(null)
+            )
+                    .isInstanceOf(
+                            IllegalArgumentException.class
+                    );
         }
 
         @Test
         void blankUserMessageThrows() {
-            assertThatThrownBy(() -> orchestrator.chat(new ChatRequest("  ", CONV_ID, TENANT, TOKEN)))
-                    .isInstanceOf(IllegalArgumentException.class)
+
+            assertThatThrownBy(() ->
+                    orchestrator.chat(
+                            new ChatRequest(
+                                    "  ",
+                                    CONV_ID,
+                                    TENANT,
+                                    TOKEN
+                            )
+                    )
+            )
+                    .isInstanceOf(
+                            IllegalArgumentException.class
+                    )
                     .hasMessageContaining("userMessage");
         }
 
         @Test
         void blankConversationIdThrows() {
-            assertThatThrownBy(() -> orchestrator.chat(new ChatRequest("Hello", "", TENANT, TOKEN)))
-                    .isInstanceOf(IllegalArgumentException.class)
+
+            assertThatThrownBy(() ->
+                    orchestrator.chat(
+                            new ChatRequest(
+                                    "Hello",
+                                    "",
+                                    TENANT,
+                                    TOKEN
+                            )
+                    )
+            )
+                    .isInstanceOf(
+                            IllegalArgumentException.class
+                    )
                     .hasMessageContaining("conversationId");
         }
 
         @Test
         void blankBearerTokenThrows() {
-            assertThatThrownBy(() -> orchestrator.chat(new ChatRequest("Hello", CONV_ID, TENANT, "")))
-                    .isInstanceOf(IllegalArgumentException.class)
+
+            assertThatThrownBy(() ->
+                    orchestrator.chat(
+                            new ChatRequest(
+                                    "Hello",
+                                    CONV_ID,
+                                    TENANT,
+                                    ""
+                            )
+                    )
+            )
+                    .isInstanceOf(
+                            IllegalArgumentException.class
+                    )
                     .hasMessageContaining("bearerToken");
         }
     }
@@ -230,14 +506,42 @@ class AgentOrchestratorTest {
 
     @Test
     void secondTurnReceivesPreviousHistory() {
+
         when(llmProvider.chat(any(), any(), any()))
-                .thenReturn(LlmResponse.text("I found your orders."))
-                .thenReturn(LlmResponse.text("Here is more detail."));
+                .thenReturn(
+                        LlmResponse.text(
+                                "I found your orders."
+                        )
+                )
+                .thenReturn(
+                        LlmResponse.text(
+                                "Here is more detail."
+                        )
+                );
 
         orchestrator.chat(request("Show orders"));
-        orchestrator.chat(request("Give me more detail on order 101"));
+
+        orchestrator.chat(
+                request("Give me more detail on order 101")
+        );
 
         // 2 turns × 2 messages each = 4
-        assertThat(conversationService.size(CONV_ID)).isEqualTo(4);
+
+        assertThat(
+                conversationService.size(CONV_ID)
+        ).isEqualTo(4);
+    }
+
+    @Test
+    void fallbackMessageUsedWhenLlmReturnsNullText() {
+
+        when(llmProvider.chat(any(), any(), any()))
+                .thenReturn(new LlmResponse(null, null));
+
+        ChatResponse response =
+                orchestrator.chat(request("Hello"));
+
+        assertThat(response.getAssistantMessage())
+                .isEqualTo("Empty response");
     }
 }
