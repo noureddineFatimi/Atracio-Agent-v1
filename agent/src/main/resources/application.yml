@@ -1,13 +1,30 @@
 spring:
   profiles:
-    active: mock, ollama
+    active: mock, openai
   ai:
+    chat:
+      client: 
+        enabled: false
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
         options:
           model: qwen2.5:1.5b
           temperature: 0.2
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash
+            temperature: 0.2
+    openai:
+      api-key: ${HUGGING_FACE_API_KEY}
+      base-url: https://router.huggingface.co
+      chat:
+        options:
+          model: openai/gpt-oss-120b:groq
+          temperature: 0.2 
 
 logging:
   level:
