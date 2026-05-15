@@ -101,8 +101,6 @@ public class ToolShemas {
         private final Map<String, Object> documentGetDetailsToolShema = tool("document.get_details",
                 """
                 Retrieve the full details of a single Atracio document by its entity type and id.
-                Use this after document.search to get the complete payload of a specific document,
-                including all lines, amounts, statuses, and related data.
                 """,
                 Map.of(
                         "type", "object",
