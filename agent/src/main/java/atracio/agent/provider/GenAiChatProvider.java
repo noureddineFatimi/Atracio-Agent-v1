@@ -84,7 +84,6 @@ public class GenAiChatProvider implements LlmProvider {
     private List<Message> buildMessages(String systemPrompt,
                                         List<Map<String, Object>> history) {
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(systemPrompt));
 
         for (Map<String, Object> entry : history) {
             String role    = (String) entry.get("role");
@@ -142,7 +141,34 @@ public class GenAiChatProvider implements LlmProvider {
                     log.warn("GenAIChatProvider: unknown role '{}' — skipping", role);
             }
         }
-        return messages;
+        List<Message> validateMessages = validateConversationAndAddSystemPrompt(systemPrompt, messages);
+        return validateMessages;
+    }
+
+    private List<Message> validateConversationAndAddSystemPrompt(String systemPrompt, List<Message> messages) {
+        
+        List<Message> validated = new ArrayList<>();
+
+        if (messages == null || messages.isEmpty()) {
+            validated.add(new SystemMessage(systemPrompt));
+            return validated;
+        }
+
+        for (Message current : messages) {
+            if (validated.isEmpty()) {
+                if (current instanceof ToolResponseMessage) {
+                    continue;
+                }
+                if (current instanceof AssistantMessage aM && aM.hasToolCalls()) {
+                    continue;
+                }
+                validated.add(current);
+                continue;
+            }
+            validated.add(current);
+        }
+        validated.add(0, new SystemMessage(systemPrompt));
+        return validated;
     }
 
     // -------------------------------------------------------------------------
