@@ -86,6 +86,17 @@ public class AtracioErrorMapper {
         );
     }
  
+     public NormalisedError mapNotFoundError(Map<String, Object> responseBody) {
+        log.debug("AtracioErrorMapper: business error — message={}", "not_found");
+ 
+        return new NormalisedError(
+                "not_found",
+                "The requested resource is not found.",
+                200,
+                "business_error"
+        );
+    }
+
     /**
      * Maps a local exception (timeout, connection refused, JSON parse failure)
      * that occurred before any Atracio response was received.
