@@ -181,7 +181,6 @@ public class ToolShemas {
                   posting   : post, reverse
                   execution : start, complete
                   payment   : allocate
-                Always confirm the document exists and is in the correct state before applying an action.
                 """,
                 Map.of(
                         "type", "object",

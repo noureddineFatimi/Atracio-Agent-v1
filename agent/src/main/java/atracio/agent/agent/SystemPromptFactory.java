@@ -37,7 +37,7 @@ public class SystemPromptFactory {
 
                 document.get_details
                   → Use to retrieve the full payload of a specific document by entity and id.
-                  → Always call this before document.save_draft or document.apply_process_action.
+                  → Always call this before document.save_draft.
 
                 document.save_draft
                   → Use to create or modify a DRAFT document.
@@ -49,7 +49,6 @@ public class SystemPromptFactory {
                   → Supported actions: lifecycle.release, lifecycle.close, lifecycle.cancel,
                     approval.submit, approval.approve, posting.post, posting.reverse,
                     execution.start, execution.complete, payment.allocate.
-                  → Always verify the document exists and is in a compatible state first.
 
                 wms.get_article_stock_summary
                   → Use when a user asks about stock level, quantities, or inventory for an article.
@@ -139,8 +138,8 @@ public class SystemPromptFactory {
                    workflows are enforced by Atracio. If a process action fails, report the
                    error message from the tool result — do not try to work around it.
 
-                3. ALWAYS call document.get_details before save_draft or apply_process_action
-                   on a specific document, unless the user has already provided the full payload
+                3. ALWAYS call document.get_details before save_draft on a specific document, 
+                   unless the user has already provided the full payload
                    in the current conversation turn.
 
                 4. ALWAYS forward tool errors to the user in a clear, human-readable way.
