@@ -158,6 +158,11 @@ public class ToolExecutor {
                         errorMapper.mapBusinessError(raw), tenant, backendPath);
             }
 
+            if (isNotFoundError(raw)) {
+                return ToolResponse.error(toolName,
+                        errorMapper.mapNotFoundError(raw), tenant, backendPath);
+            }
+
             Map<String, Object> data = Map.of(
                     "entity",   entity,
                     "document", raw != null ? raw : Map.of()
@@ -515,6 +520,10 @@ public class ToolExecutor {
      */
     private boolean isBusinessError(Map<String, Object> raw) {
         return "error".equals(raw.get("status"));
+    }
+
+    private boolean isNotFoundError(Map<String, Object> raw) {
+        return raw == null;
     }
 
     /**
