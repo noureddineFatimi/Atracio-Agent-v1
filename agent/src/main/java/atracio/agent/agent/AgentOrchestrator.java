@@ -11,11 +11,7 @@ import atracio.agent.tools.ToolDefinitionRegistry;
 import atracio.agent.tools.ToolResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
