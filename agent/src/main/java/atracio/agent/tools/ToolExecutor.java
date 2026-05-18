@@ -152,14 +152,14 @@ public class ToolExecutor {
         try {
             Map<String, Object> raw = client.getEntityDetails(entity, id, bearerToken);
 
-            if (isBusinessError(raw)) {
-                return ToolResponse.error(toolName,
-                        errorMapper.mapBusinessError(raw), tenant, backendPath);
-            }
-
             if (isNotFoundError(raw)) {
                 return ToolResponse.error(toolName,
                         errorMapper.mapNotFoundError(raw), tenant, backendPath);
+            }
+
+            if (isBusinessError(raw)) {
+                return ToolResponse.error(toolName,
+                        errorMapper.mapBusinessError(raw), tenant, backendPath);
             }
 
             Map<String, Object> data = Map.of(
