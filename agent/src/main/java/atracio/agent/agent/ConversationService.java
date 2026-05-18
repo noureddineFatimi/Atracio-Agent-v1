@@ -218,45 +218,52 @@ public class ConversationService {
      * Full raw Atracio payloads are never stored — only the normalised data.
      */
     private String summarise(String toolName, ToolResponse result) {
+        
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("tool", toolName);
+
         if (!result.isOk()) {
             ToolResponse.ErrorPayload err = result.getError();
-            return """
-                {
-                    "tool": "%s",
-                    "ok": false,
-                    "error_code": "%s",
-                    "error_message": "%s"
-                }
-                    """.formatted(toolName, err.code(), err.message());
+
+            response.put("ok", false);
+            response.put("error_code", err.code());
+            response.put("error_message", err.message());
+
+            return writeJson(response);
         }
 
         try {
             String json = objectMapper.writeValueAsString(result.getData());
-            // Trim very large payloads to avoid bloating the context window
+
+            response.put("ok", true);
+
             if (json.length() > 2000) {
-                json = json.substring(0, 2000) + "... [truncated]";
-                return """
-                {
-                    "tool": "%s",
-                    "ok": true,
-                    "dataPreview": "%s",
-                    "truncated": true
-                }
-                    """.formatted(toolName, json);
+                response.put("dataPreview", json.substring(0, 2000) + "... [truncated]");
+                response.put("truncated", true);
+            } else {
+                response.put("data", result.getData());
             }
-            else {
-                return """
-                {
-                    "tool": "%s",
-                    "ok": true,
-                    "data": %s
-                }
-                    """.formatted(toolName, json);
+
+            return writeJson(response);
+
+        } catch (Exception ex) {
+            log.warn("ConversationService: failed to serialise tool result for {}", toolName, ex);
+
+            return """
+            {
+            "tool":"%s",
+            "ok":false,
+            "error":"serialization_error"
             }
-            
-        } catch (JsonProcessingException ex) {
-            log.warn("ConversationService: failed to serialise tool result for {}", toolName);
-            return "tool: %s\nok: true\ndata: [serialisation error]".formatted(toolName);
+            """.formatted(toolName);
+        }
+    }
+
+    private String writeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

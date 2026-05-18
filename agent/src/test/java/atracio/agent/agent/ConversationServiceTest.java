@@ -167,7 +167,7 @@ class ConversationServiceTest {
 
             String content = (String) msg.get("content");
 
-            assertThat(content).contains("\"ok\": true");
+            assertThat(content).contains("\"ok\":true");
             assertThat(content).contains("document.search");
             assertThat(content).contains("totalElements");
         }
@@ -202,7 +202,7 @@ class ConversationServiceTest {
 
             String content = (String) msg.get("content");
 
-            assertThat(content).contains("\"ok\": false");
+            assertThat(content).contains("\"ok\":false");
             assertThat(content).contains("unauthorized");
         }
 
@@ -236,7 +236,7 @@ class ConversationServiceTest {
                             .get("content");
 
             assertThat(content).contains("[truncated]");
-            assertThat(content).contains("\"truncated\": true");
+            assertThat(content).contains("\"truncated\":true");
         }
     }
 
