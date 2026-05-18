@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
  * The base URL is driven by the ATRACIO_BASE_URL environment variable so that
  * switching between environments (demo, staging, prod) requires no code change.
  *
- * Default: https://demo.prod.atracio.com/api
  */
 @Component
 public class AtracioUrlResolver {
@@ -19,7 +18,7 @@ public class AtracioUrlResolver {
     private final String apiBase;
 
     public AtracioUrlResolver(
-            @Value("${atracio.base-url:https://demo.prod.atracio.com}") String baseUrl) {
+            @Value("${atracio.base-url}") String baseUrl) {
         // Normalize: strip trailing slash, then append /api
         this.apiBase = baseUrl.stripTrailing().replaceAll("/+$", "") + "/api";
     }
