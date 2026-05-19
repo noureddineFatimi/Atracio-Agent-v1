@@ -67,7 +67,7 @@ class ToolResponseTest {
         assertThat(response.getError().message()).isEqualTo("Unknown entity: FooBar");
         assertThat(response.getError().backendStatus()).isEqualTo(-1);
         assertThat(response.getError().backendCode()).isNull();
-        assertThat(response.getMeta()).isEmpty();
+        assertThat(response.getMeta()).isEqualTo(Map.of("backendPath", "/entities/list/ShippingOrder", "tenant", "demo"));
     }
 
     // -------------------------------------------------------------------------
