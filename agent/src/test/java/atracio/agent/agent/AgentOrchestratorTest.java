@@ -11,6 +11,7 @@ import atracio.agent.tools.ToolDispatcher;
 import atracio.agent.tools.ToolResponse;
 import atracio.agent.tools.ToolShemas;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +92,7 @@ class AgentOrchestratorTest {
     class DirectReply {
 
         @Test
-        void llmRepliesDirectly() {
+        void llmRepliesDirectly() throws JsonProcessingException{
 
             when(llmProvider.chat(any(), any(), any()))
                     .thenReturn(
@@ -114,7 +115,7 @@ class AgentOrchestratorTest {
         }
 
         @Test
-        void historyContainsBothUserAndAssistantMessages() {
+        void historyContainsBothUserAndAssistantMessages() throws JsonProcessingException{
 
             when(llmProvider.chat(any(), any(), any()))
                     .thenReturn(
@@ -146,7 +147,7 @@ class AgentOrchestratorTest {
     class ToolCallFlow {
 
         @Test
-        void llmRequestsToolThenProducesFinalReply() {
+        void llmRequestsToolThenProducesFinalReply() throws JsonProcessingException{
 
             ToolCall toolCall = new ToolCall(
                     "call_001",
@@ -207,7 +208,7 @@ class AgentOrchestratorTest {
         }
 
         @Test
-        void historyHas4MessagesAfterToolCallTurn() {
+        void historyHas4MessagesAfterToolCallTurn() throws JsonProcessingException{
 
             ToolCall toolCall = new ToolCall(
                     "call_002",
@@ -261,7 +262,7 @@ class AgentOrchestratorTest {
         }
 
         @Test
-        void toolFailureIsReflectedInResponse() {
+        void toolFailureIsReflectedInResponse() throws JsonProcessingException{
 
             ToolCall toolCall = new ToolCall(
                     "call_003",
@@ -312,7 +313,7 @@ class AgentOrchestratorTest {
         }
 
         @Test
-        void toolDispatcherIsCalledWithCorrectArguments() {
+        void toolDispatcherIsCalledWithCorrectArguments() throws JsonProcessingException{
 
             ToolCall toolCall = new ToolCall(
                     "call_004",
@@ -358,7 +359,7 @@ class AgentOrchestratorTest {
         }
 
         @Test
-        void multipleToolCallsAreHandled() {
+        void multipleToolCallsAreHandled() throws JsonProcessingException{
 
             ToolCall tc1 = new ToolCall(
                     "call_101",
@@ -505,7 +506,7 @@ class AgentOrchestratorTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void secondTurnReceivesPreviousHistory() {
+    void secondTurnReceivesPreviousHistory() throws JsonProcessingException{
 
         when(llmProvider.chat(any(), any(), any()))
                 .thenReturn(
@@ -533,7 +534,7 @@ class AgentOrchestratorTest {
     }
 
     @Test
-    void fallbackMessageUsedWhenLlmReturnsNullText() {
+    void fallbackMessageUsedWhenLlmReturnsNullText() throws JsonProcessingException{
 
         when(llmProvider.chat(any(), any(), any()))
                 .thenReturn(new LlmResponse(null, null));

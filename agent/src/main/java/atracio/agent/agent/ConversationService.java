@@ -91,7 +91,7 @@ public class ConversationService {
      */
     public void addAssistantToolCalls(String conversationId,
                                      List<ToolCall> llmToolCalls
-                                ) {
+                                ) throws JsonProcessingException{
         Map<String, Object> message = new LinkedHashMap<>();
         message.put("role",    "assistant");
         message.put("content", null);
@@ -102,35 +102,14 @@ public class ConversationService {
                 "type", "function",
                 "function", Map.of(
                         "name",      llmToolCall.getName(),
-                        "arguments", argumentsAsString(llmToolCall.getArguments())
+                        "arguments", objectMapper.writeValueAsString(llmToolCall.getArguments()) 
                 )
         ));
         }
         message.put("tool_calls", toolCalls);
         append(conversationId, message);
     }
-
-    /**
-     * Converts the tool call arguments map to a compact JSON string for history storage.
-     */
-    private String argumentsAsString(Map<String, Object> arguments) {
-        if (arguments == null) return "{}";
-        try {
-            StringBuilder sb = new StringBuilder("{");
-            arguments.forEach((k, v) -> {
-                sb.append("\"").append(k).append("\":");
-                if (v instanceof String s) sb.append("\"").append(s).append("\"");
-                else sb.append(v);
-                sb.append(",");
-            });
-            if (sb.charAt(sb.length() - 1) == ',') sb.deleteCharAt(sb.length() - 1);
-            sb.append("}");
-            return sb.toString();
-        } catch (Exception ex) {
-            return "{}";
-        }
-    }
-
+    
     /**
      * Appends a tool result to the conversation history.
      *

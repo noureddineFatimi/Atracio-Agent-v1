@@ -3,6 +3,8 @@ package atracio.agent.agent;
 import atracio.agent.atracio.AtracioErrorMapper;
 import atracio.agent.provider.LlmProvider.ToolCall;
 import atracio.agent.tools.ToolResponse;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -57,7 +59,7 @@ class ConversationServiceTest {
         }
 
         @Test
-        void addAssistantToolCalls() {
+        void addAssistantToolCalls() throws JsonProcessingException{
 
             ToolCall toolCall = new ToolCall(
                     "call_001",
@@ -92,7 +94,7 @@ class ConversationServiceTest {
         }
 
         @Test
-        void fullConversationTurn() {
+        void fullConversationTurn() throws JsonProcessingException{
 
             service.addUserMessage("c1", "Find purchase orders");
 

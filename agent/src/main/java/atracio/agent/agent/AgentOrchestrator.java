@@ -12,6 +12,9 @@ import atracio.agent.tools.ToolResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +71,7 @@ public class AgentOrchestrator {
      * @param request ChatRequest with userMessage, conversationId, tenant, bearerToken
      * @return ChatResponse with assistantMessage and metadata
      */
-    public ChatResponse chat(ChatRequest request) {
+    public ChatResponse chat(ChatRequest request) throws JsonProcessingException{
         validate(request);
 
         String conversationId = request.getConversationId();
