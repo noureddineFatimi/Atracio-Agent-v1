@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: http, gemini, console-runner
+    active: http, openai, console-runner
 
   ai:
     chat:
@@ -16,7 +16,7 @@ spring:
 
     google:
       genai:
-        api-key: ${GEMINI_API_KEY}
+        api-key: ${GEMINI_API_KEY:gemin_key}
         chat:
           options:
             model: ${GEMINI_MODEL:gemini-2.5-flash}
@@ -41,7 +41,7 @@ management:
         include: health, env
 
 atracio:
-  base-url: ${ATRACIO_BASE_URL}
+  base-url: ${ATRACIO_BASE_URL:https://demo.prod.atracio.com}
   http:
     connect-timeout-ms: 5000
     read-timeout-ms: 3000
