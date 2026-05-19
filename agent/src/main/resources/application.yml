@@ -1,29 +1,33 @@
 spring:
   profiles:
-    active: mock, gemini
+    active: http, gemini, console-runner
+
   ai:
     chat:
       client: 
         enabled: false
+
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
         options:
-          model: qwen2.5:1.5b
+          model: ${OLLAMA_MODEL:qwen2.5:1.5b}
           temperature: 0.2
+
     google:
       genai:
         api-key: ${GEMINI_API_KEY}
         chat:
           options:
-            model: gemini-2.5-flash
-            temperature: 0.2
+            model: ${GEMINI_MODEL:gemini-2.5-flash}
+            temperature: 0.2 
+
     openai:
       api-key: ${HUGGING_FACE_API_KEY}
-      base-url: https://router.huggingface.co
+      base-url: ${HUGGING_FACE_BASE_URL:https://router.huggingface.co}
       chat:
         options:
-          model: openai/gpt-oss-120b:groq
+          model: ${OPENAI_MODEL:openai/gpt-oss-120b:groq}
           temperature: 0.2 
 
 logging:
@@ -38,3 +42,6 @@ management:
 
 atracio:
   base-url: ${ATRACIO_BASE_URL}
+  http:
+    connect-timeout-ms: 5000
+    read-timeout-ms: 3000
