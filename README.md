@@ -12,25 +12,25 @@ HTTP API with the user's bearer token, and returns a structured reply.
 User (console / HTTP)
         │
         ▼
-  ChatController  ──────────────────────────────────────────────────────
-        │                                                               │
-        ▼                                                               │
- AgentOrchestrator                                                      │
-        │                                                               │
-        ├── SystemPromptFactory      (builds the LLM system prompt)     │
-        ├── ConversationService      (in-memory history per session)    │
-        ├── ToolDefinitionRegistry   (7 tool schemas sent to the LLM)   │
-        │                                                               │
-        ├── LlmProvider (Gemini | Ollama │ OpenAI)                      │
-        │                                                               │
-        └── ToolDispatcher ──► ToolExecutor (7 tools)                   │
-                                      │                                 │
-                                      ▼                                 │
-                            AtracioBackendClient                        │
-                            (Mock | Http)                               │
-                                      │                                 │
-                                      ▼                                 │
-                            demo.prod.atracio.com ───────────────────── 
+  ChatController  
+        │                                                               
+        ▼                                                               
+ AgentOrchestrator                                                      
+        │                                                             
+        ├── SystemPromptFactory      (builds the LLM system prompt)     
+        ├── ConversationService      (in-memory history per session)    
+        ├── ToolDefinitionRegistry   (7 tool schemas sent to the LLM)   
+        │                                                               
+        ├── LlmProvider (Gemini | Ollama │ OpenAI)                      
+        │                                                               
+        └── ToolDispatcher ──► ToolExecutor (7 tools)                   
+                                      │                                 
+                                      ▼                                 
+                            AtracioBackendClient                        
+                            (Mock | Http)                               
+                                      │                                 
+                                      ▼                                 
+                            demo.prod.atracio.com  
 ```
 
 **Rules enforced by design:**
