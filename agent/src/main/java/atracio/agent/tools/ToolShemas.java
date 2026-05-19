@@ -44,20 +44,23 @@ public class ToolShemas {
                                         "type", "array",
                                         "items", Map.of("type", "string"),
                                         "description",
-                                        "Sort directives. Format: 'field,direction'. " +
+                                        "Sort optional directives. Format: 'field,direction'. " +
+                                        "Fields are NOT all required in the example" +
                                         "Example: ['documentNumber,desc', 'documentDate,asc']."
                                 ),
                                 "entityFilters", Map.of(
                                         "type", "object",
                                         "description",
-                                        "Structured filter criteria. Keys are Atracio field paths. " +
+                                        "Optional structured filters. Keys are Atracio field paths. " +
+                                        "Each filter can be used independently." +
+                                        "The fields in the example is NOT all required." +
                                         "Example: {\"client.id\": 44, \"lifecycle.lifecycleState\": \"DRAFT\"}."
                                 ),
                                 "fieldsToFetch", Map.of(
                                         "type", "array",
                                         "items", Map.of("type", "string"),
                                         "description",
-                                        "Restrict response to these fields. Omit for full response. " +
+                                        "Restrict response to these fields. Fields are NOT all required in the example, Omit for full response. " +
                                         "Example: ['id', 'documentNumber', 'lifecycle.lifecycleState']."
                                 )
                         ),
