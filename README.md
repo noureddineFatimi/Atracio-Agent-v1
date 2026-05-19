@@ -62,7 +62,7 @@ User (console / HTTP)
 | `GEMINI_MODEL` | ❌ | `gemini-2.5-flash` | Gemini model name |
 | `OLLAMA_MODEL` | ❌ | `qwen2.5:1.5b` | Ollama model name |
 | `OPENAI_MODEL` | ❌ | `gpt-oss-120b` | OpenAI model name |
-| `ATRACIO_BASE_URL` | ✅ | - | Atracio tenant base URL |
+| `ATRACIO_BASE_URL` | ❌ | `https://demo.prod.atracio.com` | Atracio tenant base URL |
 | `OLLAMA_BASE_URL` | ❌ | `http://localhost:11434` | Ollama base url |
 | `HUGGING_FACE_BASE_URL` | ❌ | `https://router.huggingface.co` | hugging base url |
 
@@ -75,13 +75,14 @@ User (console / HTTP)
 git clone https://github.com/noureddineFatimi/Atracio-Agent-v1
 cd agent
 
-# Run with mock backend (no real Atracio needed)
-GEMINI_API_KEY=your-key mvn spring-boot:run
-
 # Run with real Atracio backend
-GEMINI_API_KEY=your-key \
-SPRING_PROFILES_ACTIVE=http,gemini,console-runner \
+HUGGING_FACE_API_KEY=your-key mvn spring-boot:run
+
+# Run with mock backend (no real Atracio needed)
+HUGGING_FACE_API_KEY=your-key \
+SPRING_PROFILES_ACTIVE=mock,openai,console-runner \
 mvn spring-boot:run
+
 ```
 
 The server starts on port `8080`. The console runner starts automatically in the same process.
@@ -205,7 +206,7 @@ curl http://localhost:8080/actuator/health
 # application.yml
 spring:
   profiles:
-    active: mock,gemini,console-runner
+    active: http,openai,console-runner
 ```
 
 **Console runner disabled (Only the server is running):**
@@ -214,36 +215,36 @@ spring:
 # application.yml
 spring:
   profiles:
-    active: mock,gemini
+    active: http,openai
 ```
 
 ---
 
 ## Switch LLM Provider
 
-**Gemini (default):**
+**OpenAI (default):**
 
 ```yaml
 # application.yml
 spring:
   profiles:
-    active: mock,gemini
-  ai:
-    google:
-      gemini:
-        api-key: ${GEMINI_API_KEY}
-        chat:
-          options:
-            model: ${GEMINI_MODEL:gemini-2.0-flash}
-            temperature: 0.2
+    active: http,openai,console-runner
 ```
 
 **Ollama (local, no API key):**
 
 ```bash
-SPRING_PROFILES_ACTIVE=mock,ollama \
-OLLAMA_BASE_URL=http://localhost:11434 \
-OLLAMA_MODEL=llama3.2 \
+HUGGING_FACE_API_KEY=your-key \
+SPRING_PROFILES_ACTIVE=http,ollama,console-runner \
+mvn spring-boot:run
+```
+
+**Gemini:**
+
+```bash
+SPRING_PROFILES_ACTIVE=http,gemini,console-runner \
+HUGGING_FACE_API_KEY=your-key \
+GEMINI_API_KEY=gemini-key \
 mvn spring-boot:run
 ```
 
@@ -258,10 +259,14 @@ mvn spring-boot:run
 
 ```bash
 # Mock (default)
-SPRING_PROFILES_ACTIVE=mock,gemini mvn spring-boot:run
+HUGGING_FACE_API_KEY=your-key \
+SPRING_PROFILES_ACTIVE=mock,openai \
+mvn spring-boot:run
 
 # Real backend
-SPRING_PROFILES_ACTIVE=http,gemini mvn spring-boot:run
+HUGGING_FACE_API_KEY=your-key \
+SPRING_PROFILES_ACTIVE=http,openai \
+mvn spring-boot:run
 ```
 
 ---
@@ -272,10 +277,8 @@ SPRING_PROFILES_ACTIVE=http,gemini mvn spring-boot:run
 # All unit and mock-stack integration tests (no external dependencies)
 mvn test
 
-# mock backend integration tests (requires a valid Atracio token)
-SPRING_PROFILES_ACTIVE=mock,gemini \
-ATRACIO_TEST_TOKEN=eyJ... \
-mvn test -Dtest=MockStackIntegrationTest
+# mock backend integration tests 
+HUGGING_FACE_API_KEY=your-key mvn test -Dtest=MockStackIntegrationTest
 ```
 
 **Test suites:**
