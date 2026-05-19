@@ -272,10 +272,10 @@ SPRING_PROFILES_ACTIVE=http,gemini mvn spring-boot:run
 # All unit and mock-stack integration tests (no external dependencies)
 mvn test
 
-# Real backend integration tests (requires a valid Atracio token)
-SPRING_PROFILES_ACTIVE=http,gemini \
+# mock backend integration tests (requires a valid Atracio token)
+SPRING_PROFILES_ACTIVE=mock,gemini \
 ATRACIO_TEST_TOKEN=eyJ... \
-mvn test -Dtest=RealBackendIntegrationTest
+mvn test -Dtest=MockStackIntegrationTest
 ```
 
 **Test suites:**
