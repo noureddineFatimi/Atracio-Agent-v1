@@ -9,9 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Executes all 7 tools defined in the guide (section 15).
@@ -80,6 +82,8 @@ public class ToolExecutor {
                     "Parameter 'entity' is required.", tenant, backendPath);
         }
 
+        Map<String, Object> filters = translateEntityFilters(entityFilters);
+
         try {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("filter",        filter != null ? filter : "");
@@ -87,7 +91,7 @@ public class ToolExecutor {
             requestBody.put("size",          size > 0 ? size : 20);
             requestBody.put("sort",          sort != null ? sort : List.of("documentNumber,desc"));
             requestBody.put("asPage",        true);
-            requestBody.put("entityFilters", entityFilters != null ? entityFilters : Map.of());
+            requestBody.put("entityFilters", filters != null ? filters : Map.of());
             if (fieldsToFetch != null && !fieldsToFetch.isEmpty()) {
                 requestBody.put("fieldsToFetch", fieldsToFetch);
             }
@@ -98,15 +102,26 @@ public class ToolExecutor {
                 return ToolResponse.error(toolName,
                         errorMapper.mapBusinessError(raw), tenant, backendPath);
             }
+            
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> items = (List<Map<String, Object>>) raw.get("content");
 
-            Object items = raw.get("content");
+            if ("StockReceipt".equals(entity)) {
+                List<Map<String, Object>> lines_items = new ArrayList<>();
+                for (Map<String, Object> item : items) {
+                    Map<String, Object> lines = extractStockReceiptLines(item);
+                    lines_items.add(lines);
+                }
+                items = new ArrayList<>(lines_items);
+            }
+
             Object pageable = raw.get("pageable");
             Map<?, ?> pageableMap  = pageable instanceof Map<?, ?> p ? p : Map.of();
             Object totalElements = raw.get("totalElements");
             Object totalPages = raw.get("totalPages");
             Map<String, Object> data = Map.of(
                     "entity", entity,
-                    "items", items instanceof List<?> i ? i : List.of(),
+                    "items", items,
                     "page", Map.of("number", pageableMap.get("pageNumber") instanceof Integer pN ? pN : 0, "size", pageableMap.get("pageSize") instanceof Integer pS ? pS : 0, "totalElements", totalElements instanceof Integer tE ? tE : 0,"totalPages", totalPages instanceof Integer tP ? tP : 0)
             );
 
@@ -122,6 +137,34 @@ public class ToolExecutor {
             log.error("[{}] unexpected error", toolName, ex);
             return ToolResponse.error(toolName, err, tenant, backendPath);
         }
+    }
+
+    private Map<String, Object> translateEntityFilters(Map<String, Object> llmFilters) {
+        if (llmFilters == null || !llmFilters.containsKey("conditions")) {
+            return llmFilters; // passthrough si format legacy
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> conditions = (List<Map<String, Object>>) llmFilters.get("conditions");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> fieldFilters = conditions.stream()
+            .map(c -> {
+                List<String> values = c.containsKey("values")
+                    ? (List<String>) c.get("values")
+                    : List.of();
+
+                return Map.of(
+                    "field",       c.get("field"),
+                    "operator",    c.get("operator"),
+                    "value",       values
+                );
+            })
+            .collect(Collectors.toList());
+
+        return Map.of(
+            "dependenciesOp", "AND",
+            "fieldFilters",   fieldFilters
+        );
     }
 
     // =========================================================================
@@ -162,6 +205,10 @@ public class ToolExecutor {
                         errorMapper.mapBusinessError(raw), tenant, backendPath);
             }
 
+            if ("StockReceipt".equals(entity)) {
+                raw = extractStockReceiptLines(raw);
+            }
+
             Map<String, Object> data = Map.of(
                     "entity",   entity,
                     "document", raw != null ? raw : Map.of()
@@ -179,6 +226,21 @@ public class ToolExecutor {
             log.error("[{}] unexpected error", toolName, ex);
             return ToolResponse.error(toolName, err, tenant, backendPath);
         }
+    }
+
+    private Map<String, Object> extractStockReceiptLines(Map<String, Object> data) {
+        if (data == null) {
+            return Map.of();
+        }
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> lines = data.get("lines") instanceof List<?> l ? (List<Map<String, Object>>) l : List.of();
+        List<Map<String, Object>> articles = new ArrayList<>();
+        for (Map<String, Object> line : lines) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> article = line.get("article") instanceof Map<?, ?> a ? (Map<String, Object>) a : Map.of();
+            articles.add(article);
+        }
+        return Map.of("data", articles);
     }
 
     // =========================================================================
