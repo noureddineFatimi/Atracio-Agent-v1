@@ -13,9 +13,9 @@ public class ToolShemas {
                 Search and list documents in Atracio across Sales, Procurement, and WMS modules.
                 Use this tool when the user wants to find, list, or filter documents such as
                 SalesOrder, Quotation, PurchaseOrder, PurchaseRequest, SalesInvoice, PurchaseInvoice,
-                StockTransferOrder, StockAdjustment, or InventoryCount.
+                StockTransferOrder, StockAdjustment, StockReceipt or InventoryCount.
                 Always specify the entity. Use filter for free-text search.
-                Use entityFilters for structured criteria (e.g. client id, lifecycle state).
+                Use entityFilters for optional structured criteria (e.g. client id, lifecycle state).
                 """,
                 Map.of(
                         "type", "object",
@@ -86,7 +86,7 @@ public class ToolShemas {
                                         "type", "array",
                                         "items", Map.of("type", "string"),
                                         "description",
-                                        "Restrict response to these fields. Fields are NOT all required in the example, Omit for full response. " +
+                                        "Restrict response to these fields. Fields are NOT all required in the example." +
                                         "Example: ['id', 'documentNumber', 'lifecycle.lifecycleState', 'lines']."
                                 )
                         ),
@@ -109,7 +109,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
                                 ),
                                 "document", Map.of(
                                         "type", "object",
@@ -138,7 +138,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
                                 ),
                                 "id", Map.of(
                                         "type", "integer",
@@ -216,7 +216,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
                                 ),
                                 "id", Map.of(
                                         "type", "integer",

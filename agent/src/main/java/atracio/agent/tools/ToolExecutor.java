@@ -232,6 +232,7 @@ public class ToolExecutor {
         if (data == null) {
             return Map.of();
         }
+        Long id = data.get("id") instanceof Long l ? l : data.get("id") instanceof Integer i ? Long.valueOf(i) : 0;
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> lines = data.get("lines") instanceof List<?> l ? (List<Map<String, Object>>) l : List.of();
         List<Map<String, Object>> articles = new ArrayList<>();
@@ -240,7 +241,7 @@ public class ToolExecutor {
             Map<String, Object> article = line.get("article") instanceof Map<?, ?> a ? (Map<String, Object>) a : Map.of();
             articles.add(article);
         }
-        return Map.of("data", articles);
+        return Map.of("articles data of stock receipt with id" + id, articles);
     }
 
     // =========================================================================
