@@ -1,5 +1,7 @@
 package atracio.agent.agent;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -63,6 +65,8 @@ public class SystemPromptFactory {
                   → Specify partnerType: 'client' or 'vendor', and the partnerId.
             """;
 
+    private String today = LocalDate.now(ZoneOffset.UTC).toString(); 
+
     private final String entities = """
             SALES MODULE
                   - SalesOrder       : customer sales orders
@@ -103,7 +107,7 @@ public class SystemPromptFactory {
                                       .builder()
                                       .template(promptTemplate())
                                       .build();
-      Map<String, Object> varaiblesMap = Map.of("entities", entities, "tenant", tenant, "tools", tools, "response_format", response_format);
+      Map<String, Object> varaiblesMap = Map.of("entities", entities, "tenant", tenant, "tools", tools, "response_format", response_format, "today_date", today);
       return promptTemplate.render(varaiblesMap);
     }
 
@@ -114,6 +118,12 @@ public class SystemPromptFactory {
                 the Sales, Procurement, and Warehouse (WMS) modules.
 
                 You are operating on tenant: {tenant}
+
+                ═══════════════════════════════════════════════
+                TODAY DATE
+                ═══════════════════════════════════════════════
+
+                {today_date}
 
                 ═══════════════════════════════════════════════
                 AVAILABLE ENTITIES
