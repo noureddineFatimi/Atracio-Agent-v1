@@ -24,7 +24,8 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "StockReceipt"
+                                        )
                                 ),
                                 "filter", Map.of(
                                         "type", "string",
@@ -46,22 +47,47 @@ public class ToolShemas {
                                         "description",
                                         "Sort optional directives. Format: 'field,direction'. " +
                                         "Fields are NOT all required in the example" +
-                                        "Example: ['documentNumber,desc', 'documentDate,asc']."
+                                        "Example: ['documentNumber,desc']."
                                 ),
                                 "entityFilters", Map.of(
                                         "type", "object",
                                         "description",
-                                        "Optional structured filters. Keys are Atracio field paths. " +
-                                        "Each filter can be used independently." +
-                                        "The fields in the example is NOT all required." +
-                                        "Example: {\"client.id\": 44, \"lifecycle.lifecycleState\": \"DRAFT\"}."
-                                ),
+                                        "Structured filters applied to the entity. " +
+                                        "Use 'conditions' array, each with 'field', 'operator', and 'value'. " +
+                                        "Supported operators: EQUAL, NOT_EQUAL, GREATER_THAN, LESS_THAN, BETWEEN " +
+                                        "All conditions are combined with AND. " +
+                                        "Format of date :ISO-8601, e.g. '2026-04-20T00:00:00Z'" +
+                                        "Known date fields by entity: " +
+                                        "  StockReceipt → 'atDate' , " +
+                                        "  PurchaseInvoice → 'billingDate' and 'deliveryDate', " +
+                                        "  SalesOrder → 'billingDate' and 'deliveryDate'. ",
+                                        "properties", Map.of(
+                                                "conditions", Map.of(
+                                                "type", "array",
+                                                "items", Map.of(
+                                                        "type", "object",
+                                                        "properties", Map.of(
+                                                        "field",    Map.of("type", "string"),
+                                                        "operator", Map.of(
+                                                                "type", "string",
+                                                                "enum", List.of("EQUAL","NOT_EQUAL","GREATER_THAN","LESS_THAN","BETWEEN")
+                                                        ),
+                                                        "values", Map.of(
+                                                                "type", "array",
+                                                                "items", Map.of("type", "string"),
+                                                                "description", "Filter values. Can be one or more regarding to the operator. Example: BETWEEN => ['2025-10-02T23:00:00.000Z', '2025-11-06T22:59:00.000Z'], NOT_EQUAL => ['driver_1'] ]")
+                                                        ),
+                                                        "required", List.of("field", "operator", "values")
+                                                )
+                                                )
+                                        )
+                                        ),
                                 "fieldsToFetch", Map.of(
                                         "type", "array",
                                         "items", Map.of("type", "string"),
                                         "description",
                                         "Restrict response to these fields. Fields are NOT all required in the example, Omit for full response. " +
-                                        "Example: ['id', 'documentNumber', 'lifecycle.lifecycleState']."
+                                        "Example: ['id', 'documentNumber', 'lifecycle.lifecycleState', 'lines']."
                                 )
                         ),
                         "required", List.of("entity")
