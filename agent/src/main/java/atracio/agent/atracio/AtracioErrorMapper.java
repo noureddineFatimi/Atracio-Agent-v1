@@ -173,7 +173,7 @@ public class AtracioErrorMapper {
             case "timeout"          ->
                     "The Atracio backend did not respond in time. User should try again.";
             case "backend_error"    ->
-                    "An unexpected error occurred on the Atracio backend. User should try again later.";
+                    backendMessage != null ? backendMessage : "An unexpected error occurred on the Atracio backend. User should try again later.";
             default                 ->
                     backendMessage != null ? backendMessage : "An unknown error occurred.";
         };
