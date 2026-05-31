@@ -5,7 +5,6 @@ import atracio.agent.agent.ConversationService;
 import atracio.agent.dto.ChatRequest;
 import atracio.agent.dto.ChatResponse;
 
-import org.checkerframework.common.reflection.qual.GetClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

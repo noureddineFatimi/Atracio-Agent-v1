@@ -1,6 +1,7 @@
 package atracio.agent.agent;
 
 import atracio.agent.tools.ToolResponse;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -8,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import atracio.agent.provider.LlmProvider.ToolCall;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,10 +171,16 @@ public class ConversationService {
 
     private void append(String conversationId, Map<String, Object> message) {
         List<Map<String, Object>> history = histories.computeIfAbsent(
-                conversationId, k -> new ArrayList<>());
+                conversationId, k -> new ArrayList<>(List.of(Map.of("created_at", Instant.now()), new HashMap<>(Map.of("updated_at", Instant.now())))));
 
         synchronized (history) {
             history.add(message);
+            for (Map<String,Object> entry : history) {
+                if (entry.containsKey("updated_at")) {
+                    entry.put("updated_at",  Instant.now());
+                    break;
+                }
+            }
             trim(history);
         }
 
