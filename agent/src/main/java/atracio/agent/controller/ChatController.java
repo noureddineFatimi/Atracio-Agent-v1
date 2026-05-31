@@ -4,19 +4,24 @@ import atracio.agent.agent.AgentOrchestrator;
 import atracio.agent.agent.ConversationService;
 import atracio.agent.dto.ChatRequest;
 import atracio.agent.dto.ChatResponse;
+
+import org.checkerframework.common.reflection.qual.GetClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * HTTP entry point for the Atracio Agent.
@@ -91,6 +96,22 @@ public class ChatController {
 
         } catch (Exception ex) {
             log.error("POST /chat unexpected error", ex);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An unexpected error occurred. Please try again."));
+        }
+    }
+
+    @GetMapping("/conversations")
+    public ResponseEntity<?> getConversations() {
+        log.info("GET /conversations");
+
+        try {
+            ConcurrentHashMap<String,List<Map<String,Object>>> conversations = conversationService.getHistories();
+            return ResponseEntity.ok(conversations);
+
+        } catch (Exception ex) {
+            log.error("GET /conversations", ex);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred. Please try again."));

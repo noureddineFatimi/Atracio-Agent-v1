@@ -158,6 +158,10 @@ public class ConversationService {
         }
     }
 
+    public ConcurrentHashMap<String, List<Map<String, Object>>> getHistories() {
+            return histories;
+    }
+
     // -------------------------------------------------------------------------
     // Internal
     // -------------------------------------------------------------------------
