@@ -86,7 +86,10 @@ public class GenAiChatProvider implements LlmProvider {
         List<Message> messages = new ArrayList<>();
 
         for (Map<String, Object> entry : history) {
-            String role    = (String) entry.get("role");
+            Object roleObj    =   entry.get("role");
+            if (!(roleObj instanceof String role)) {
+                continue;
+            }
             Object content = entry.get("content");
 
             switch (role) {

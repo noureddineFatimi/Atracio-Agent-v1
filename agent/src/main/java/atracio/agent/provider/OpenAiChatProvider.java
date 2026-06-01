@@ -88,7 +88,7 @@ public class OpenAiChatProvider implements LlmProvider {
         for (Map<String, Object> entry : history) {
             Object roleObj    =   entry.get("role");
             if (!(roleObj instanceof String role)) {
-                break;
+                continue;
             }
             Object content = entry.get("content");
 

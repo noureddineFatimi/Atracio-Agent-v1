@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: http, openai
+    active: http, gemini, console-runner
 
   ai:
     chat:

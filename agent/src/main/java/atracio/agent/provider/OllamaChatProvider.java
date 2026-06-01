@@ -87,7 +87,10 @@ public class OllamaChatProvider implements LlmProvider {
         messages.add(new SystemMessage(systemPrompt));
 
         for (Map<String, Object> entry : history) {
-            String role    = (String) entry.get("role");
+            Object roleObj    =   entry.get("role");
+            if (!(roleObj instanceof String role)) {
+                continue;
+            }   
             Object content = entry.get("content");
 
             switch (role) {
