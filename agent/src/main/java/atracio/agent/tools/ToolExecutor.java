@@ -3,6 +3,7 @@ package atracio.agent.tools;
 import atracio.agent.atracio.AtracioBackendClient;
 import atracio.agent.atracio.AtracioBackendException;
 import atracio.agent.atracio.AtracioErrorMapper;
+import atracio.agent.atracio.AtracioTokenExpiredException;
 import atracio.agent.atracio.AtracioErrorMapper.NormalisedError;
 import atracio.agent.atracio.AtracioUrlResolver;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public class ToolExecutor {
             requestBody.put("filter",        filter != null ? filter : "");
             requestBody.put("page",          page >= 0 ? page : 0);
             requestBody.put("size",          size > 0 ? size : 20);
-            requestBody.put("sort",          sort != null ? sort : List.of("documentNumber,desc"));
+            requestBody.put("sort",          sort != null ? sort : List.of());
             requestBody.put("asPage",        true);
             requestBody.put("entityFilters", filters != null ? filters : Map.of());
             if (fieldsToFetch != null && !fieldsToFetch.isEmpty()) {
@@ -418,12 +419,12 @@ public class ToolExecutor {
         }
 
         try {
-            Double  quantity        = safeDouble(() -> client.getArticleQuantity(articleId, siteId, bearerToken));
-            Double  forecastQty     = safeDouble(() -> client.getArticleForecast(articleId, siteId, bearerToken));
-            Double  valuation       = safeDouble(() -> client.getArticleValuation(articleId, bearerToken));
-            Double  entriesThisYear = safeDouble(() -> client.getArticleEntries(articleId, bearerToken));
-            Double  issuesThisYear  = safeDouble(() -> client.getArticleIssues(articleId, bearerToken));
-            Double  turnover        = safeDouble(() -> client.getArticleTurnover(articleId, bearerToken));
+            Double  quantity        = safeDouble(() -> client.getArticleQuantity(articleId, siteId, bearerToken), toolName, "");
+            Double  forecastQty     = safeDouble(() -> client.getArticleForecast(articleId, siteId, bearerToken), toolName, "");
+            Double  valuation       = safeDouble(() -> client.getArticleValuation(articleId, bearerToken), toolName, "");
+            Double  entriesThisYear = safeDouble(() -> client.getArticleEntries(articleId, bearerToken), toolName, "");
+            Double  issuesThisYear  = safeDouble(() -> client.getArticleIssues(articleId, bearerToken), toolName, "");
+            Double  turnover        = safeDouble(() -> client.getArticleTurnover(articleId, bearerToken), toolName, "");
 
             Map<String, Object> data = new HashMap<>();
             data.put("articleId",          articleId);
@@ -439,6 +440,9 @@ public class ToolExecutor {
            
             return ToolResponse.successWithMeta(toolName, data, meta);
 
+        } catch (AtracioTokenExpiredException e){
+            NormalisedError normalisedError = errorMapper.map(e.getHttpStatus(), e.getBody());
+            return ToolResponse.errorWithMeta(toolName, normalisedError, Map.of("tenant", "demo", "aggregated", true));
         } catch (Exception ex) {
             NormalisedError err = errorMapper.mapException(ex);
             log.error("[{}] unexpected error", toolName, ex);
@@ -548,17 +552,17 @@ public class ToolExecutor {
             data.put("partnerId",   partnerId);
 
             if ("client".equals(partnerType)) {
-                data.put("turnover",          safeDouble(() -> client.getClientTurnover(partnerId, bearerToken)));
-                data.put("unpaidAmount",      safeDouble(() -> client.getClientUnpaidAmount(partnerId, bearerToken)));
-                data.put("unpaidInvoices",    safeCall(()   -> client.getClientUnpaidInvoices(partnerId, bearerToken)));
-                data.put("lastInvoiceDate",   safeCall(()   -> client.getClientLastInvoiceDate(partnerId, bearerToken)));
-                data.put("salesOrdersCount",  safeCall(()   -> client.getClientSalesOrdersCount(partnerId, bearerToken)));
-                data.put("lastSalesOrder",    safeCall(()   -> client.getClientLastSalesOrder(partnerId, bearerToken)));
+                data.put("turnover",          safeDouble(() -> client.getClientTurnover(partnerId, bearerToken), toolName, ""));
+                data.put("unpaidAmount",      safeDouble(() -> client.getClientUnpaidAmount(partnerId, bearerToken), toolName, ""));
+                data.put("unpaidInvoices",    safeCall(()   -> client.getClientUnpaidInvoices(partnerId, bearerToken), toolName, ""));
+                data.put("lastInvoiceDate",   safeCall(()   -> client.getClientLastInvoiceDate(partnerId, bearerToken), toolName, ""));
+                data.put("salesOrdersCount",  safeCall(()   -> client.getClientSalesOrdersCount(partnerId, bearerToken), toolName, ""));
+                data.put("lastSalesOrder",    safeCall(()   -> client.getClientLastSalesOrder(partnerId, bearerToken), toolName, ""));
             } else {
-                data.put("turnover",               safeDouble(() -> client.getVendorTurnover(partnerId, bearerToken)));
-                data.put("unpaidAmount",           safeDouble(() -> client.getVendorUnpaidAmount(partnerId, bearerToken)));
-                data.put("unpaidInvoices",         safeCall(()   -> client.getVendorUnpaidInvoices(partnerId, bearerToken)));
-                data.put("lastPurchaseOrderDate",  safeCall(()   -> client.getVendorLastPurchaseOrderDate(partnerId, bearerToken)));
+                data.put("turnover",               safeDouble(() -> client.getVendorTurnover(partnerId, bearerToken), toolName, ""));
+                data.put("unpaidAmount",           safeDouble(() -> client.getVendorUnpaidAmount(partnerId, bearerToken), toolName, ""));
+                data.put("unpaidInvoices",         safeCall(()   -> client.getVendorUnpaidInvoices(partnerId, bearerToken), toolName, ""));
+                data.put("lastPurchaseOrderDate",  safeCall(()   -> client.getVendorLastPurchaseOrderDate(partnerId, bearerToken), toolName, ""));
             }
 
             log.debug("[{}] partnerType={} partnerId={} ok", toolName, partnerType, partnerId);
@@ -592,9 +596,15 @@ public class ToolExecutor {
      * Calls a supplier that returns a double. Returns null on any failure
      * instead of aborting the whole aggregation (used by stock summary and partner summary).
      */
-    private Double safeDouble(DoubleSupplierThrows supplier) {
+    private Double safeDouble(DoubleSupplierThrows supplier, String toolName, String backendPath) {
         try {
             return supplier.get();
+        }catch(AtracioBackendException e) {
+            if (e.getBody().get("code") instanceof String code && "access_token_expired".equals(code)) {
+                throw new AtracioTokenExpiredException(e.getHttpStatus(), e.getBody());
+            } else {
+                return null;
+            }
         } catch (Exception ex) {
             log.warn("safeDouble: sub-call failed — {}", ex.getMessage());
             return null;
@@ -604,11 +614,17 @@ public class ToolExecutor {
     /**
      * Calls a supplier that returns any Object. Returns null on any failure.
      */
-    private Object safeCall(ObjectSupplierThrows supplier) {
+    private Object safeCall(ObjectSupplierThrows supplier, String toolName, String backendPath) {
         try {
             return supplier.get();
+        }catch(AtracioBackendException e) {
+            if (e.getBody().get("code") instanceof String code && "access_token_expired".equals(code)) {
+                throw new AtracioTokenExpiredException(e.getHttpStatus(), e.getBody());
+            } else {
+                return null;
+            }
         } catch (Exception ex) {
-            log.warn("safeCall: sub-call failed — {}", ex.getMessage());
+            log.warn("safeCall: safe-call failed — {}", ex.getMessage());
             return null;
         }
     }

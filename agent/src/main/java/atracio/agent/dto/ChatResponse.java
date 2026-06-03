@@ -1,4 +1,5 @@
 package atracio.agent.dto;
+import atracio.agent.provider.LlmProvider.ToolCall;
 
 import java.util.List;
 
@@ -21,6 +22,8 @@ public class ChatResponse {
      */
     private List<ToolCallDto> toolCalls;
 
+    private boolean requiresTokenRefresh;
+
     // -------------------------------------------------------------------------
     // Constructors
     // -------------------------------------------------------------------------
@@ -28,10 +31,23 @@ public class ChatResponse {
     public ChatResponse() {}
 
     public ChatResponse(String assistantMessage, String conversationId,
-                         List<ToolCallDto> toolCalls) {
+                         List<ToolCallDto> toolCalls, boolean requiresTokenRefresh ) {
         this.assistantMessage = assistantMessage;
         this.conversationId   = conversationId;
         this.toolCalls         = toolCalls;
+        this.requiresTokenRefresh = requiresTokenRefresh;
+    }
+
+    /**
+     * Token expired — frontend must refresh and retry.
+     *
+     * assistantMessage is a user-friendly prompt to re-authenticate,
+     * shown only if the frontend cannot handle the refresh silently.
+     */
+    public static ChatResponse tokenExpired(String conversationId, ToolCall toolCall) {
+        return new ChatResponse(
+                "Your session has expired.",
+                conversationId, List.of(new ToolCallDto(toolCall.getName(), "failed")), true);
     }
 
     // -------------------------------------------------------------------------
@@ -46,4 +62,7 @@ public class ChatResponse {
 
     public List<ToolCallDto>  getToolCalls()                    { return toolCalls; }
     public void    setToolCalls(List<ToolCallDto> v)            { this.toolCalls = v; }
+
+    public boolean isRequiresTokenRefresh()           { return requiresTokenRefresh; }
+    public void    setRequiresTokenRefresh(boolean v) { this.requiresTokenRefresh = v; }
 }

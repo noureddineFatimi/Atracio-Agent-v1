@@ -229,8 +229,8 @@ public class ConversationService {
 
             response.put("ok", true);
 
-            if (json.length() > 2000) {
-                response.put("dataPreview", json.substring(0, 2000) + "... [truncated]");
+            if (json.length() > 5000) {
+                response.put("dataPreview", json.substring(0, 5000) + "... [truncated]");
                 response.put("truncated", true);
             } else {
                 response.put("data", result.getData());
@@ -258,4 +258,46 @@ public class ConversationService {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Rolls back the last user turn after a token-expired failure.
+     *
+     * Removes the last N messages added during the failed turn:
+     *   - The user message
+     *   - The assistant tool_call decision (if any)
+     *
+     * This leaves the history exactly as it was before the user sent the message,
+     * so the frontend can retry the same request with a fresh token and the
+     * conversation picks up cleanly without duplicating messages.
+     *
+     * Called exclusively by AgentOrchestrator when isTokenExpired() is true.
+     */
+    public void rollbackLastTurn(String conversationId) {
+        List<Map<String, Object>> history = histories.get(conversationId);
+        if (history == null) return;
+ 
+        synchronized (history) {
+            // Remove from the end: assistant tool_call (if present) then user message
+            // We remove up to 2 messages: user + assistant tool_call decision
+            while (!history.isEmpty()) {
+                Map<String, Object> last = history.get(history.size() - 1);
+                Object roleObj = last.get("role");
+                if (!(roleObj instanceof String role)) {
+                    return;
+                }
+                // Stop if we've passed the user message
+                if ("user".equals(role)) {
+                    history.remove(history.size() - 1);
+                    break;
+                }
+                // Remove assistant tool_call
+                if ("assistant".equals(role) || "tool".equals(role)) {
+                    history.remove(history.size() - 1);
+                }
+            }
+            log.debug("ConversationService: [{}] rolled back {} messages", conversationId);
+        }
+    }
+ 
+
 }

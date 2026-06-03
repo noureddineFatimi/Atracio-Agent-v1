@@ -115,6 +115,18 @@ public class AgentOrchestrator {
             for (ToolCall toolCall : toolCalls) {
                 ToolResponse toolResult = toolDispatcher.dispatch(toolCall, tenant, bearerToken);
                 // Execute the tool
+
+                    // ----------------------------------------------------------------
+                // V1 token refresh rule (guide):
+                // If Atracio returned 401 / access_token_expired, short-circuit.
+                // Roll back the failed turn from history so the frontend can retry
+                // the exact same user message with a fresh token cleanly.
+                // ----------------------------------------------------------------
+                if (isTokenExpired(toolResult)) {
+                    log.warn("AgentOrchestrator: [{}] token expired — rolling back turn", conversationId);
+                    conversationService.rollbackLastTurn(conversationId);
+                    return ChatResponse.tokenExpired(conversationId, toolCall);
+                }
             
                 log.info("AgentOrchestrator: [{}] tool='{}' ok={}",
                     conversationId, toolCall.getName(), toolResult.isOk());
@@ -146,9 +158,20 @@ public class AgentOrchestrator {
             return new ChatResponse(
                     assistantMessage,
                     conversationId,
-                    toolCallDtos.size() == 0 ? null : toolCallDtos
+                    toolCallDtos.size() == 0 ? null : toolCallDtos,
+                    false
             );
     }
+
+        /**
+         * Returns true when the tool result signals that the Atracio token has expired.
+         * Covers both 'unauthorized' (generic) and the specific 'tenant_mismatch' case.
+         */
+        private boolean isTokenExpired(ToolResponse toolResult) {
+            if (toolResult.isOk()) return false;
+            String code = toolResult.getError().code();
+            return "unauthorized".equals(code) || "tenant_mismatch".equals(code);
+        }
 
     // -------------------------------------------------------------------------
     // Internal helpers

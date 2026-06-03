@@ -13,9 +13,12 @@ public class ToolShemas {
                 Search and list documents in Atracio across Sales, Procurement, and WMS modules.
                 Use this tool when the user wants to find, list, or filter documents such as
                 SalesOrder, Quotation, PurchaseOrder, PurchaseRequest, SalesInvoice, PurchaseInvoice,
-                StockTransferOrder, StockAdjustment, StockReceipt or InventoryCount.
+                StockTransferOrder, StockAdjustment, StockReceipt, GeneralArticle or InventoryCount.
                 Always specify the entity. Use filter for free-text search.
                 Use entityFilters for optional structured criteria (e.g. client id, lifecycle state).
+                This tool can be used also to search the id of a document.
+                If a business error occured when executing this tool, try another keywords to perform the tool call.
+                Omit the sort field if the sort it's not requested.
                 """,
                 Map.of(
                         "type", "object",
@@ -24,7 +27,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "StockReceipt"
+                                        "enum", List.of("SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "StockReceipt", "GeneralArticle"
                                         )
                                 ),
                                 "filter", Map.of(
@@ -38,7 +41,8 @@ public class ToolShemas {
                                 ),
                                 "size", Map.of(
                                         "type", "integer",
-                                        "description", "Number of results per page. Default 20, max 100.",
+                                        "description", 
+                                        "Number of results per page. Default 20, max 100.",
                                         "default", 20
                                 ),
                                 "sort", Map.of(
@@ -47,7 +51,8 @@ public class ToolShemas {
                                         "description",
                                         "Sort optional directives. Format: 'field,direction'. " +
                                         "Fields are NOT all required in the example" +
-                                        "Example: ['documentNumber,desc']."
+                                        "Example: ['documentNumber,desc', 'billingDate,asc', 'deliveryDate,desc', 'requestDate,asc']."+
+                                        "Omit if the sort it's not requested"
                                 ),
                                 "entityFilters", Map.of(
                                         "type", "object",
@@ -67,7 +72,7 @@ public class ToolShemas {
                                                 "items", Map.of(
                                                         "type", "object",
                                                         "properties", Map.of(
-                                                        "field",    Map.of("type", "string"),
+                                                        "field",    Map.of("type", "string", "description", "Field to filter, examples: documentNumber ,client.lastName, vendor.name"),
                                                         "operator", Map.of(
                                                                 "type", "string",
                                                                 "enum", List.of("EQUAL","NOT_EQUAL","GREATER_THAN","LESS_THAN","BETWEEN")
@@ -109,7 +114,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "GeneralArticle")
                                 ),
                                 "document", Map.of(
                                         "type", "object",
@@ -130,6 +135,7 @@ public class ToolShemas {
         private final Map<String, Object> documentGetDetailsToolShema = tool("document.get_details",
                 """
                 Retrieve the full details of a single Atracio document by its entity type and id.
+                If the user dosn't provide the id, use the document.search tool to search the id using the information that he provides to you, if document.search tool not return the id, ask the user the id of the document.
                 """,
                 Map.of(
                         "type", "object",
@@ -138,7 +144,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "GeneralArticle")
                                 ),
                                 "id", Map.of(
                                         "type", "integer",
@@ -156,6 +162,7 @@ public class ToolShemas {
                     entries and issues for the current year, and annual turnover.
                     Use this when the user asks about stock level, inventory, or article quantities.
                     Optionally filter by site with siteId.
+                    If the user dosn't provide the id of the article, or the id of the site, use the document.search tool to search the id using the information that he provides to you, if document.search tool not return the id, ask the user the id of the article and site if he asked. 
                     """,
                     Map.of(
                             "type", "object",
@@ -208,6 +215,7 @@ public class ToolShemas {
                   posting   : post, reverse
                   execution : start, complete
                   payment   : allocate
+                If the user dosn't provide the id, use the document.search tool to search the id using the information that he provides to you, if document.search tool not return the id, ask the user the id of the document.
                 """,
                 Map.of(
                         "type", "object",
@@ -216,7 +224,7 @@ public class ToolShemas {
                                         "type", "string",
                                         "description",
                                         "Atracio entity key",
-                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount")
+                                        "enum", List.of("StockReceipt", "SalesOrder", "Quotation", "SalesInvoice", "PurchaseOrder", "PurchaseRequest", "PurchaseInvoice" ,"StockTransferOrder", "StockAdjustment", "InventoryCount", "GeneralArticle")
                                 ),
                                 "id", Map.of(
                                         "type", "integer",
