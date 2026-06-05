@@ -72,7 +72,7 @@ public class ToolShemas {
                                                 "items", Map.of(
                                                         "type", "object",
                                                         "properties", Map.of(
-                                                        "field",    Map.of("type", "string", "description", "Field to filter, examples: documentNumber ,client.lastName, vendor.name"),
+                                                        "field",    Map.of("type", "string", "description", "Field to filter, examples: documentNumber ,client.lastName, vendor.name, code"),
                                                         "operator", Map.of(
                                                                 "type", "string",
                                                                 "enum", List.of("EQUAL","NOT_EQUAL","GREATER_THAN","LESS_THAN","BETWEEN")
