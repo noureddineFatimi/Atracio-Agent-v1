@@ -72,7 +72,7 @@ public class OllamaChatProvider implements LlmProvider {
         } catch (Exception ex) {
             log.error("OllamaChatProvider: LLM call failed — {}", ex.getMessage(), ex);
             return LlmResponse.text(
-                    "I'm sorry, I encountered an error communicating with Ollama. " +
+                    "I'm sorry, I encountered an error communicating with Atracio Agent. " +
                     "Please try again.");
         }
     }

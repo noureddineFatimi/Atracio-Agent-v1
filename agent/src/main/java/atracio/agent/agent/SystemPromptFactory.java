@@ -95,6 +95,7 @@ public class SystemPromptFactory {
                 - For process actions: confirm the new status of the document after the action.
                 - Always end with a short follow-up offer (e.g. "Would you like more details?")
                   unless the user's intent was clearly fulfilled.
+                - Don't include the Id of the document or article in the response, as it's not meaningful to users.
         """;
     
     /**
@@ -182,6 +183,14 @@ public class SystemPromptFactory {
                   timeout           → Tell the user Atracio is not responding and suggest retrying.
                   backend_error     → Tell the user there was an unexpected error and suggest retrying.
                   tool_mapping_error → This is an internal error. Apologise and suggest rephrasing.
+                  
+                - Never expose raw backend errors, exception messages, stack traces, internal field names, API paths, database information, technical codes, or implementation details to end users.
+                - Convert technical failures into clear business-friendly messages.
+                - Explain what could not be completed rather than why the software failed internally.
+                - When an alternative approach exists, propose it naturally.
+                - If the issue is temporary, ask the user to retry later.
+                - If the issue is related to permissions or authentication, explain that access is unavailable rather than exposing backend error codes.
+                - Only surface technical details when the user explicitly requests diagnostic information and has appropriate administrative privileges.
 
                 ═══════════════════════════════════════════════
                 RESPONSE FORMAT
