@@ -30,7 +30,7 @@ User (console / HTTP)
                             (Mock | Http)                               
                                       │                                 
                                       ▼                                 
-                            demo.prod.atracio.com  
+                                    "url" 
 ```
 
 **Rules enforced by design:**
@@ -49,7 +49,7 @@ User (console / HTTP)
 | Maven | 3.9+ |
 | Gemini API key | [aistudio.google.com](https://aistudio.google.com) |
 | Hugging Face API key | [huggingface.co/](https://huggingface.co/docs/inference-providers/index) |
-| Atracio tenant | `https://demo.prod.atracio.com` |
+| Atracio tenant | `url` |
 
 ---
 
@@ -62,7 +62,7 @@ User (console / HTTP)
 | `GEMINI_MODEL` | ❌ | `gemini-2.5-flash` | Gemini model name |
 | `OLLAMA_MODEL` | ❌ | `qwen2.5:1.5b` | Ollama model name |
 | `OPENAI_MODEL` | ❌ | `gpt-oss-120b` | OpenAI model name |
-| `ATRACIO_BASE_URL` | ❌ | `https://demo.prod.atracio.com` | Atracio tenant base URL |
+| `ATRACIO_BASE_URL` | ❌ | `url` | Atracio tenant base URL |
 | `OLLAMA_BASE_URL` | ❌ | `http://localhost:11434` | Ollama base url |
 | `HUGGING_FACE_BASE_URL` | ❌ | `https://router.huggingface.co` | hugging base url |
 
@@ -255,7 +255,7 @@ mvn spring-boot:run
 | Profile | Backend | Use case |
 |---|---|---|
 | `mock` | Static responses | Local dev, CI, all unit tests |
-| `http` | Real `demo.prod.atracio.com` | Integration testing, production |
+| `http` | Real `url` | Integration testing, production |
 
 ```bash
 # Mock (default)

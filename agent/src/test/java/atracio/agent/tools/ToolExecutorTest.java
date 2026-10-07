@@ -44,7 +44,7 @@ class ToolExecutorTest {
     @BeforeEach
     void setUp() {
         errorMapper = new AtracioErrorMapper();
-        urlResolver = new AtracioUrlResolver("https://demo.prod.atracio.com");
+        urlResolver = new AtracioUrlResolver("https://url");
         executor    = new ToolExecutor(client, errorMapper, urlResolver);
     }
 

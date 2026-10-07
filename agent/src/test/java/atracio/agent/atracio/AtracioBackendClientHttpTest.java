@@ -20,7 +20,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 class AtracioBackendClientHttpTest {
 
-    private static final String BASE_URL = "https://demo.prod.atracio.com/api";
+    private static final String BASE_URL = "url";
     private static final String TOKEN = "fake-token";
 
     private MockRestServiceServer server;
