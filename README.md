@@ -208,6 +208,7 @@ spring:
   profiles:
     active: http,openai,console-runner
 ```
+![description](Picture2.png)
 
 **Console runner disabled (Only the server is running):**
 
